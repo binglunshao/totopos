@@ -38,4 +38,4 @@ def topological_gene_scores_via_perturbation(
     top_loss = torch.mean((vr_filtration.values[crit_indices] - crit_values) ** 2)
     top_loss.backward()
     if verbose:print("Finished gene score calculation succesfully.")
-    return pts.grad.abs().sum(0).numpy()
+    return pts.grad.abs().sum(0).numpy(), [dgm[i] for i in range(max_hom_dim+1)]
