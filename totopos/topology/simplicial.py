@@ -1,5 +1,6 @@
 """Designed for computing simplicial 1-cohomology representatives using Scoccola et al. Toroidal Coordinates algorithm.
 """
+import numpy as np
 from dreimac import ToroidalCoords
 import warnings
 from .neighborhood import get_lifetimes, get_largest_lifetime_from_diagram, largest_neighborhood_lifetime
@@ -16,7 +17,7 @@ class SimplicialTopology():
             self.data, n_landmarks=self.n_pts, maxdim=self.maxdim, prime=47, verbose=verbose
         )
 
-    def estimate_neighborhood_threshold(self, ph_dim = 1, neighborhood_size = 300): 
+    def estimate_neighborhood_threshold(self, ph_dim = 1, neighborhood_size = 300, verbose = False): 
         """Estimates the homology lifetime "noise floor" defined as the largest PH lifetime 
         across k neighborhoods using kmeans clustering."""
 
@@ -30,6 +31,7 @@ class SimplicialTopology():
         self.neighborhood_lifetime_threshold = {ph_dim:largest_nbd_lifetime}
         n_prominent_feats_ = sum(lifetimes >= largest_nbd_lifetime)
         self.n_prominent_feats = {ph_dim: n_prominent_feats_}
+        if verbose: print(f"Found {n_prominent_feats_} topological loops.")
 
     def get_harmonic_reps(self, perc = .1, check_consistency = False, n_classes = None):
         """Computes harmonic representatives using Scoccola et al. Toroidal Coordinates algorithm.
@@ -48,31 +50,34 @@ class SimplicialTopology():
 
     def fit(self,verbose=False):
         self.compute_persistent_cohomology(verbose=verbose)
-        self.estimate_neighborhood_threshold()
+        self.estimate_neighborhood_threshold(verbose=verbose)
         self.get_harmonic_reps()
     
-    def fit_transform(self, data):
+    def fit_transform(self):
         self.fit()
         return self.toroidal_coords
     
-    def transform(self, data): 
+    def transform(self): 
         return self.toroidal_coords
 
     def get_harmonic_rep_indicators(self): 
         return self.toroidal_coords > np.pi
 
     def is_invalid_harmonic_rep(self, index, thresh = .5): 
-        fraction_nz_pts = sum(self.toroidal_coords[:, i] > np.pi)/len(self.data)
+        fraction_nz_pts = sum(self.toroidal_coords[:, index] > np.pi)/len(self.data)
         return fraction_nz_pts > thresh
 
     def correct_for_one_inconsistent_toroidal_coord(self, coords, invalid_idx):
-        indicators = get_harmonic_rep_indicators()
+        indicators = self.get_harmonic_rep_indicators()
         indicators[:, invalid_idx] = indicators.sum(1) % 2
         self.toroidal_coords[:, invalid_idx] = self.toroidal_coords[:, invalid_idx][indicators[:, invalid_idx]]
         return coords
 
     def consistency_check(self):
-        invalid = [is_invalid_harmonic_rep(self.toroidal_coords[:, i]) for i in range(self.n_prominent_feats)]
+        invalid = [
+            self.is_invalid_harmonic_rep(self.toroidal_coords[:, i]) for i in range(self.n_prominent_feats)
+        ]
+
         if np.sum(invalid)>0:
             if np.sum(invalid)==1:
                 invalid_idx = np.flatnonzero(invalid)[0]
