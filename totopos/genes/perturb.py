@@ -22,7 +22,10 @@ def topological_gene_scores_via_perturbation(
     max_dist = dists.max()
     if verbose:print("Calculating Vietoris-Rips filtration...")
     vr_filtration = oin.diff.vietoris_rips_pwdists(
-        dists, max_dim=max_hom_dim+1, max_radius=max_dist/2, n_threads=n_threads
+        dists, 
+        max_dim=max_hom_dim+1,# need the k+1 skeleton for k-homology
+        max_radius=max_dist/2, 
+        n_threads=n_threads
     )
     if verbose:print("Finished filtration.")
 
