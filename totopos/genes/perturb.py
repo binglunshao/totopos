@@ -19,6 +19,7 @@ def topological_gene_scores_via_perturbation(
     epsilon = 1e-8
     sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
     dists = torch.sqrt(sq_dists + epsilon)
+    max_dist = dists.max()
     if verbose:print("Calculating Vietoris-Rips filtration...")
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, max_dim=max_hom_dim, max_radius=max_radius, n_threads=n_threads
@@ -28,7 +29,7 @@ def topological_gene_scores_via_perturbation(
     if verbose:print("Computing persistent homology...")
     dgm = top_opt.compute_diagram(include_inf_points=False)
     if verbose:print("Finished persistent homology calculation.")
-    eps = top_opt.get_nth_persistence(max_hom_dim, n_topo_feats)
+    eps = top_opt.get_nth_persistence(max_hom_dim+1, n_topo_feats)
     if verbose:print("Calculating gene scores...")
     indices, values = top_opt.simplify(eps, oin.DenoiseStrategy.BirthBirth, max_hom_dim)
     critical_sets = top_opt.singletons(indices, values)
