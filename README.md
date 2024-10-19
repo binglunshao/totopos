@@ -16,9 +16,14 @@ conda env create -f environment.yml
 conda activate totopos
 ```
 
-3. Install [`oineus`](https://github.com/anigmetov/oineus/)
+3. Install `pytorch`. 
 
-4. Install `totopos` module
+Depends on your setup, see [here](https://pytorch.org/get-started/locally/).
+
+
+4. Install [`oineus`](https://github.com/anigmetov/oineus/)
+
+5. Install `totopos` module
 
 ```
 pip install -e . #run in the repo's root directory
