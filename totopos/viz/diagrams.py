@@ -51,7 +51,7 @@ def plot_pers_diag_ripser(dgms:list, ax = None, dot_size = 40, conf_int=None):
     plt.xlabel("birth")
     plt.ylabel("death")
 
-    plt.legend()
+    plt.legend(bbox_to_anchor = (1,1))
 
 
 def replace_inf(arrays):
