@@ -1,0 +1,22 @@
+name: totopos
+channels:
+- conda-forge
+dependencies:
+- python>=3.9
+- pip
+- Ripser
+- tqdm
+- jupyter
+- Cython
+- numpy
+- scipy
+- anndata
+- pandas
+- nb_conda_kernels
+- seaborn
+- toolz
+- numba
+- dreimac
+- pip:
+   - colorcet
+

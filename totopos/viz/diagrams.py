@@ -48,8 +48,9 @@ def plot_pers_diag_ripser(dgms:list, ax = None, dot_size = 40, conf_int=None):
 
     plt.xlim(-.1, max_val)
     plt.ylim(0, max_val +.5)
-    plt.xlabel("birth")
-    plt.ylabel("death")
+    plt.xlabel("birth radius")
+    plt.ylabel("death radius")
+    plt.title("persistent diagram")
 
     plt.legend(bbox_to_anchor = (1,1))
 
