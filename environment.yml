@@ -16,7 +16,7 @@ dependencies:
 - seaborn
 - toolz
 - numba
-- dreimac
 - pip:
    - colorcet
+   - dreimac
 
