@@ -16,9 +16,7 @@ conda env create -f environment.yml
 conda activate totopos
 ```
 
-3. Install `pytorch`. 
-
-Depends on your setup, see [here](https://pytorch.org/get-started/locally/).
+3. Install `pytorch` depending on your setup, see [here](https://pytorch.org/get-started/locally/).
 
 
 4. Install [`oineus`](https://github.com/anigmetov/oineus/)
