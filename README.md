@@ -16,12 +16,12 @@ conda env create -f environment.yml
 conda activate totopos
 ```
 
-3. Install `totopos` module
+3. Install [`oineus`](https://github.com/anigmetov/oineus/)
+
+4. Install `totopos` module
 
 ```
 pip install -e . #run in the repo's root directory
 ```
-
-4. Install [`oineus`](https://github.com/anigmetov/oineus/)
 
 5. Optional : install [`dionysus`](https://mrzv.org/software/dionysus2/#get-build-install)
