@@ -3,13 +3,11 @@ import oineus as oin
 import numpy as np 
 
 def topological_gene_scores_via_topological_simplification(
-    data:np.ndarray, max_radius:float=2.0, n_threads:int=2,
-    hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False
     )->np.ndarray:
     """
     Returns gene scores via topological simplification, i.e. reducing the topological noise from a persistent diagram.
     """
-
     pts = torch.Tensor(data)
     pts.requires_grad_(True)
     # compute pairwise distances differentiably
@@ -42,7 +40,8 @@ def topological_gene_scores_via_topological_simplification(
     crit_indices, crit_values = top_opt.combine_loss(critical_sets, oin.ConflictStrategy.Max)
     crit_indices = np.array(crit_indices, dtype=np.int32)
     crit_values = torch.Tensor(crit_values)
-    top_loss = torch.mean((vr_filtration.values[crit_indices] - crit_values) ** 2)
+    #top_loss = torch.mean((vr_filtration.values[crit_indices] - crit_values) ** 2)
+    top_loss = torch.norm(vr_filtration.values[crit_indices] - crit_values)
     top_loss.backward()
     if verbose:print("Finished gene score calculation succesfully.")
     gradient = pts.grad
@@ -50,16 +49,42 @@ def topological_gene_scores_via_topological_simplification(
     return torch.norm(gradient, dim = 0).numpy(), [dgm[i] for i in range(hom_dim+1)]
 
 def topological_gene_scores_via_perturbation(
-    data:np.ndarray, max_radius:float=2.0, n_threads:int=2,
-    hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, epochs:int= 1
     )->np.ndarray:
     """
     Returns gene scores via a perturbation approach. 
-    In particular, this method calculates the norm of the gradient of 
+    In particular, this method calculates the norm of the gradients w.r.t. 
+    a perturbation of the input points to send the largest persistent homology class to the diagonal.
     """
 
     pts = torch.Tensor(data)
     pts.requires_grad_(True)
+    lr = 1e-2
+    grads = []
+    for i in range(epochs):
+        topo_loss, dgms = topology_layer_perturbation(pts)
+        topo_loss.backward()
+        grad = pts.grad
+        pts = pts - lr * grad # perturb points
+        topo_loss.backward()
+        grads.append(grad)
+    
+    grad_norms = torch.cat([torch.norm(grad,dim=0) for grad in grads], 0)
+    scores = grad_norms.mean(0)
+    return scores, [dgms[i] for i in range(hom_dim+1)]
+
+def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=16)->torch.tensor:
+    """
+    Returns topological loss for perturbation.
+
+    Usage
+    -----
+    lr = 1e-2
+    topo_loss, dgms = topology_layer_perturbation(pts)
+    topo_loss.backward()
+    grad = pts.grad
+    pts = pts - lr * grad # perturb points 
+    """
     # compute pairwise distances differentiably
     pts1 = pts.unsqueeze(1)
     pts2 = pts.unsqueeze(0)
@@ -90,8 +115,6 @@ def topological_gene_scores_via_perturbation(
 
     indices_dgm = dcmp.diagram(fil).index_diagram_in_dimension(hom_dim)
     birth_simplex_sorted_ix, death_simplex_sorted_ix = indices_dgm[ix_largest_lifetime, :]
-    birth_value = fil.simplex_value_by_sorted_id(birth_simplex_sorted_ix)
-    death_value = fil.simplex_value_by_sorted_id(death_simplex_sorted_ix)
     
     tgt_val = dgms[hom_dim][ix_largest_lifetime].sum()/2 # send ph class to diag
     indices = [birth_simplex_sorted_ix, death_simplex_sorted_ix]
@@ -102,11 +125,8 @@ def topological_gene_scores_via_perturbation(
     crit_indices, target_crit_values = opt.combine_loss(critical_sets, oin.ConflictStrategy.Max)
     crit_edges = longest_edges[crit_indices, :]
     crit_edges_x, crit_edges_y = crit_edges[:, 0], crit_edges[:, 1]
-
     target_crit_values = torch.Tensor(target_crit_values)
     init_crit_values = torch.sum((pts[crit_edges_x, :] - pts[crit_edges_y, :])**2, axis=1) # distance of largest edges in critical simplices
     topo_loss = torch.norm(target_crit_values - init_crit_values)
-    topo_loss.backward()
-    grad = pts.grad
 
-    return torch.norm(grad,dim=0).numpy(), [dgms[i] for i in range(hom_dim+1)]
+    return topo_loss, [dgms[i] for i in range(hom_dim+1)]
