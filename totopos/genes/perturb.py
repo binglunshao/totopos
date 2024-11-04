@@ -48,31 +48,6 @@ def topological_gene_scores_via_topological_simplification(
 
     return torch.norm(gradient, dim = 0).numpy(), [dgm[i] for i in range(hom_dim+1)]
 
-def topological_gene_scores_via_perturbation(
-    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, epochs:int= 1
-    )->np.ndarray:
-    """
-    Returns gene scores via a perturbation approach. 
-    In particular, this method calculates the norm of the gradients w.r.t. 
-    a perturbation of the input points to send the largest persistent homology class to the diagonal.
-    """
-
-    pts = torch.Tensor(data)
-    pts.requires_grad_(True)
-    lr = 1e-2
-    grads = []
-    for i in range(epochs):
-        topo_loss, dgms = topology_layer_perturbation(pts)
-        topo_loss.backward()
-        grad = pts.grad
-        pts = pts - lr * grad # perturb points
-        topo_loss.backward()
-        grads.append(grad)
-    
-    grad_norms = torch.cat([torch.norm(grad,dim=0) for grad in grads], 0)
-    scores = grad_norms.mean(0)
-    return scores, [dgms[i] for i in range(hom_dim+1)]
-
 def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=16)->torch.tensor:
     """
     Returns topological loss for perturbation.
@@ -130,3 +105,19 @@ def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=1
     topo_loss = torch.norm(target_crit_values - init_crit_values)
 
     return topo_loss, [dgms[i] for i in range(hom_dim+1)]
+
+def topological_gene_scores_via_perturbation(
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, epochs:int= 1
+    )->np.ndarray:
+    """
+    Returns gene scores via a perturbation approach. 
+    In particular, this method calculates the norm of the gradients w.r.t. 
+    a perturbation of the input points to send the largest persistent homology class to the diagonal.
+    """
+
+    pts = torch.Tensor(data)
+    pts.requires_grad_(True)
+    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, n_threads)
+    topo_loss.backward()
+    grad = pts.grad
+    return grad.norm(dim=0).numpy(), [dgms[i] for i in range(hom_dim+1)]
