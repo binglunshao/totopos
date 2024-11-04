@@ -122,7 +122,7 @@ def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=1
     return topo_loss, [dgms[i] for i in range(hom_dim+1)]
 
 def topological_gene_scores_via_perturbation(
-    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, epochs:int= 1
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, epochs:int= 1, pca:bool=False, n_pcs:int=20
     )->np.ndarray:
     """
     Returns gene scores via a perturbation approach. 
@@ -132,7 +132,7 @@ def topological_gene_scores_via_perturbation(
 
     pts = torch.Tensor(data)
     pts.requires_grad_(True)
-    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, n_threads)
+    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, n_threads,pca, n_pcs)
     topo_loss.backward()
     grad = pts.grad
     return grad.norm(dim=0).numpy(), [dgms[i] for i in range(hom_dim+1)]
