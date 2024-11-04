@@ -3,16 +3,22 @@ import oineus as oin
 import numpy as np 
 
 def topological_gene_scores_via_topological_simplification(
-    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, pca:bool = False, n_pcs:int=30
     )->np.ndarray:
     """
     Returns gene scores via topological simplification, i.e. reducing the topological noise from a persistent diagram.
     """
     pts = torch.Tensor(data)
     pts.requires_grad_(True)
-    # compute pairwise distances differentiably
-    pts1 = pts.unsqueeze(1)
-    pts2 = pts.unsqueeze(0)
+
+    if pca:    
+        U, s, Vt = torch.linalg.svd(pts)
+        pcs = U[:, :n_pcs] *  s[:n_pcs]
+        pts1 = pcs.unsqueeze(1)
+        pts2 = pcs.unsqueeze(0)
+    else:
+        pts1 = pts.unsqueeze(1)
+        pts2 = pts.unsqueeze(0)
 
     epsilon = 1e-8
     sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
@@ -48,9 +54,13 @@ def topological_gene_scores_via_topological_simplification(
 
     return torch.norm(gradient, dim = 0).numpy(), [dgm[i] for i in range(hom_dim+1)]
 
-def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=16)->torch.tensor:
+def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=16, pca:bool=False, n_pcs:int=20)->torch.tensor:
     """
     Returns topological loss for perturbation.
+
+    Params
+    ------
+    pts : Input dataset. Needs to have the `requires_grad` param active.
 
     Usage
     -----
@@ -60,9 +70,14 @@ def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=1
     grad = pts.grad
     pts = pts - lr * grad # perturb points 
     """
-    # compute pairwise distances differentiably
-    pts1 = pts.unsqueeze(1)
-    pts2 = pts.unsqueeze(0)
+    if pca:    
+        U, s, Vt = torch.linalg.svd(pts)
+        pcs = U[:, :n_pcs] *  s[:n_pcs]
+        pts1 = pcs.unsqueeze(1)
+        pts2 = pcs.unsqueeze(0)
+    else:
+        pts1 = pts.unsqueeze(1)
+        pts2 = pts.unsqueeze(0)
 
     epsilon = 1e-8
     sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
