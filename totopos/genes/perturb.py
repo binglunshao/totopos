@@ -33,7 +33,7 @@ def topological_gene_scores_via_topological_simplification(
         max_radius=max_dist/2, 
         n_threads=n_threads
     )
-    if verbose:print("Finished filtration.")
+    if verbose:print(f"Finished filtration {vr_filtration}.")
 
     top_opt = oin.diff.TopologyOptimizer(vr_filtration)
     
@@ -96,7 +96,7 @@ def topology_layer_perturbation(
     fil, longest_edges = oin.get_vr_filtration_and_critical_edges_from_pwdists(
         dists_np, max_dim=2, max_radius = max_dist/2 + .1, n_threads=n_threads
     )
-    if verbose:print("Finished filtration.")
+    if verbose:print(f"Finished filtration {fil}.")
 
     if verbose:print("Computing persistent homology...")
     dualize = False # no cohomology
@@ -131,7 +131,7 @@ def topology_layer_perturbation(
     init_crit_values = torch.sum((pts[crit_edges_x, :] - pts[crit_edges_y, :])**2, axis=1) # distance of largest edges in critical simplices
     topo_loss = torch.norm(target_crit_values - init_crit_values)
     if verbose:print("Finished gene score calculation succesfully.")
-    
+
     return topo_loss, [dgms[i] for i in range(hom_dim+1)]
 
 def topological_gene_scores_via_perturbation(
