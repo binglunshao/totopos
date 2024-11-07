@@ -1,6 +1,7 @@
 import torch
 import oineus as oin
 import numpy as np 
+from typing import Tuple
 
 def topological_gene_scores_via_topological_simplification(
     data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, pca:bool = False, n_pcs:int=30
@@ -55,9 +56,12 @@ def topological_gene_scores_via_topological_simplification(
 
     return torch.norm(gradient, dim = 0).numpy(), [dgm[i] for i in range(hom_dim+1)]
 
-def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=16, pca:bool=False, n_pcs:int=20)->torch.tensor:
+def topology_layer_perturbation(
+    pts:torch.Tensor, hom_dim:int=1, n_threads:int=16, pca:bool=False, n_pcs:int=20, verbose:bool=False
+)->Tuple[torch.tensor, list]:
     """
-    Returns topological loss for perturbation.
+    Returns topological loss and persistent diagrams for perturbation approach.
+    TODO: Handle `n_top_feats`
 
     Params
     ------
@@ -88,10 +92,13 @@ def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=1
     dists = torch.sqrt(sq_dists + epsilon)
     max_dist = dists.max()
     dists_np = dists.detach().numpy().astype(np.float64)
+    if verbose:print("Calculating Vietoris-Rips filtration...")
     fil, longest_edges = oin.get_vr_filtration_and_critical_edges_from_pwdists(
         dists_np, max_dim=2, max_radius = max_dist/2 + .1, n_threads=n_threads
     )
-    
+    if verbose:print("Finished filtration.")
+
+    if verbose:print("Computing persistent homology...")
     dualize = False # no cohomology
     dcmp = oin.Decomposition(fil, dualize) # create VRU decomposition object, does not perform reduction yet
 
@@ -99,9 +106,10 @@ def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=1
     rp.compute_u = False # U matrix cannot be computed in parallel mode
     rp.compute_v = True
     rp.n_threads = 16
+    dcmp.reduce(rp) # perform PH reduction
+    if verbose:print("Finished persistent homology calculation.")
 
-    # perform reduction
-    dcmp.reduce(rp)
+    if verbose:print("Calculating gene scores...")
     dgms = dcmp.diagram(fil, include_inf_points=False)
     dgms = [dgms[0], dgms[1]]
     lifetimes = dgms[1][:, 1] - dgms[1][:, 0]
@@ -122,21 +130,22 @@ def topology_layer_perturbation(pts:torch.Tensor, hom_dim:int=1, n_threads:int=1
     target_crit_values = torch.Tensor(target_crit_values)
     init_crit_values = torch.sum((pts[crit_edges_x, :] - pts[crit_edges_y, :])**2, axis=1) # distance of largest edges in critical simplices
     topo_loss = torch.norm(target_crit_values - init_crit_values)
-
+    if verbose:print("Finished gene score calculation succesfully.")
+    
     return topo_loss, [dgms[i] for i in range(hom_dim+1)]
 
 def topological_gene_scores_via_perturbation(
     data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, epochs:int= 1, pca:bool=False, n_pcs:int=20
-    )->np.ndarray:
+)->Tuple[np.ndarray,list]:
     """
-    Returns gene scores via a perturbation approach. 
+    Returns gene scores and persistent diagrams via a perturbation approach. 
     In particular, this method calculates the norm of the gradients w.r.t. 
     a perturbation of the input points to send the largest persistent homology class to the diagonal.
     """
 
     pts = torch.Tensor(data)
     pts.requires_grad_(True)
-    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, n_threads, pca, n_pcs)
+    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, n_threads, pca, n_pcs, verbose)
     topo_loss.backward()
     grad = pts.grad
     return grad.norm(dim=0).numpy(), [dgms[i] for i in range(hom_dim+1)]
