@@ -84,7 +84,7 @@ def topology_layer_perturbation(
     """
     if pca:
         pts_ = pts - pts.mean(dim=0) # mean center data
-        U, s, Vt = torch.linalg.svd(pts_)
+        U, s, Vt = torch.svd_lowrank(pts_, q = n_pcs + 50, niter = 2)
         pcs = U[:, :n_pcs] *  s[:n_pcs]
         pts1 = pcs.unsqueeze(1)
         pts2 = pcs.unsqueeze(0)
