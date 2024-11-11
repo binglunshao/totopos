@@ -12,20 +12,25 @@ def topological_gene_scores_via_topological_simplification(
     pts = torch.Tensor(data)
     pts.requires_grad_(True)
 
-    if pca:    
+    if pca:
+        if verbose:print("Calculating SVD...") 
         pts_ = pts - pts.mean(dim=0) # mean center data
         U, s, Vt = torch.linalg.svd(pts_)
         pcs = U[:, :n_pcs] *  s[:n_pcs]
         pts1 = pcs.unsqueeze(1)
         pts2 = pcs.unsqueeze(0)
+        if verbose:print("Finished SVD calculation.") 
     else:
         pts1 = pts.unsqueeze(1)
         pts2 = pts.unsqueeze(0)
 
     epsilon = 1e-8
+    if verbose:print("Calculating distances...") 
     sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
     dists = torch.sqrt(sq_dists + epsilon)
     max_dist = dists.max()
+    if verbose:print("Finished differentiable distance calculation.") 
+    
     if verbose:print("Calculating Vietoris-Rips filtration...")
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
