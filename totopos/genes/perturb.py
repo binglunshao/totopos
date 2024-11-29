@@ -83,18 +83,23 @@ def topology_layer_perturbation(
     TODO: add possibility of calculating via subset. 
     """
     if pca:
+        if verbose:print("Calculating SVD...") 
         pts_ = pts - pts.mean(dim=0) # mean center data
         U, s, Vt = torch.svd_lowrank(pts_, q = n_pcs + 50, niter = 2)
         pcs = U[:, :n_pcs] *  s[:n_pcs]
         pts1 = pcs.unsqueeze(1)
         pts2 = pcs.unsqueeze(0)
+        if verbose:print("Finished SVD computation.") 
     else:
         pts1 = pts.unsqueeze(1)
         pts2 = pts.unsqueeze(0)
-
+    
+    if verbose:print("Calculating distances...") 
     epsilon = 1e-8
     sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
     dists = torch.sqrt(sq_dists + epsilon)
+    if verbose:print("Finished differentiable distance calculation.")
+    
     max_dist = dists.max()
     dists_np = dists.detach().numpy().astype(np.float64)
     if verbose:print("Calculating Vietoris-Rips filtration...")
