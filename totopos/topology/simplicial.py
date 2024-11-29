@@ -34,10 +34,3 @@ class SimplicialTopology():
     def fit(self,verbose=False):
         self.compute_persistent_cohomology(verbose=verbose)
         self.estimate_neighborhood_threshold(verbose=verbose)
-    
-    # def fit_transform(self):
-    #     self.fit()
-    #     return self.toroidal_coords
-    
-    # def transform(self): 
-    #     return self.toroidal_coords
