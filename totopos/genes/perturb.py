@@ -3,7 +3,7 @@ import oineus as oin
 import numpy as np 
 from typing import Tuple
 
-def topological_gene_scores_via_topological_simplification(
+def topological_gene_scores_via_simplification(
     data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, pca:bool = False, n_pcs:int=30
     )->np.ndarray:
     """
