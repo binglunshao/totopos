@@ -38,7 +38,7 @@ def largest_neighborhood_lifetime(
     labels=km.predict(data)
     largest_nbd_lifetime=0
     neighborhood_lifetimes = []
-    for i in tqdm(range(n_clusters),desc="Estimating PH noise floor using Kmeans neighborhoods"):
+    for i in tqdm(range(n_clusters),desc="Estimating PH noise floor using Voronoi neighborhoods..."):
         persistence_diagram = ripser(data[labels==i],maxdim=ph_dim)["dgms"][ph_dim]
         neighborhood_lifetimes.extend(get_lifetimes(persistence_diagram))
         if len(persistence_diagram)>0:

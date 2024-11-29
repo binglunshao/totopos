@@ -1,7 +1,7 @@
-"""Designed for computing simplicial 1-cohomology representatives using Scoccola et al. Toroidal Coordinates algorithm.
+"""Designed for inferring prominent topology from data.
 """
 import numpy as np
-from dreimac import ToroidalCoords
+from ripser import ripser
 import warnings
 from .neighborhood import get_lifetimes, get_largest_lifetime_from_diagram, largest_neighborhood_lifetime
 
@@ -11,11 +11,9 @@ class SimplicialTopology():
         self.n_pts = n_pts 
         self.maxdim = maxdim
     
-    def compute_persistent_cohomology(self, verbose=False):
+    def compute_persistent_cohomology(self, mode, verbose=False):
         """Computes Persistent Cohomology using Bauer's ripser algorithm."""
-        self.ph = ToroidalCoords(
-            self.data, n_landmarks=self.n_pts, maxdim=self.maxdim, prime=47, verbose=verbose
-        )
+        self.ph = ripser(self.data, n_perm = self.n_pts, maxdim=self.maxdim, prime=2)
 
     def estimate_neighborhood_threshold(self, ph_dim = 1, neighborhood_size = 300, verbose = False): 
         """Estimates the homology lifetime "noise floor" defined as the largest PH lifetime 
@@ -31,56 +29,15 @@ class SimplicialTopology():
         self.neighborhood_lifetime_threshold = {ph_dim:largest_nbd_lifetime}
         n_prominent_feats_ = sum(lifetimes >= largest_nbd_lifetime)
         self.n_prominent_feats = {ph_dim: n_prominent_feats_}
-        if verbose: print(f"Found {n_prominent_feats_} topological loops.")
-
-    def get_harmonic_reps(self, perc = .1, check_consistency = False, n_classes = None):
-        """Computes harmonic representatives using Scoccola et al. Toroidal Coordinates algorithm.
-        """
-        assert 1 in self.n_prominent_feats.keys(), f"Please run estimate_neighborhood_threshold() for dim 1."
-        n_classes = self.n_prominent_feats[1] if n_classes is None else n_classes
-        self.toroidal_coords = self.ph.get_coordinates(
-            perc=perc, 
-            cocycle_idxs = range(n_classes), 
-            standard_range=False, 
-            check_cocycle_condition=True
-        ).T
-
-        if check_consistency: 
-            self.toroidal_coords_consistency_check()
+        if verbose: print(f"Found {n_prominent_feats_} prominent topological loops.")
 
     def fit(self,verbose=False):
         self.compute_persistent_cohomology(verbose=verbose)
         self.estimate_neighborhood_threshold(verbose=verbose)
-        self.get_harmonic_reps()
     
-    def fit_transform(self):
-        self.fit()
-        return self.toroidal_coords
+    # def fit_transform(self):
+    #     self.fit()
+    #     return self.toroidal_coords
     
-    def transform(self): 
-        return self.toroidal_coords
-
-    def get_harmonic_rep_indicators(self): 
-        return self.toroidal_coords > np.pi
-
-    def is_invalid_harmonic_rep(self, index, thresh = .5): 
-        fraction_nz_pts = sum(self.toroidal_coords[:, index] > np.pi)/len(self.data)
-        return fraction_nz_pts > thresh
-
-    def correct_for_one_inconsistent_toroidal_coord(self, coords, invalid_idx):
-        indicators = self.get_harmonic_rep_indicators()
-        indicators[:, invalid_idx] = indicators.sum(1) % 2
-        self.toroidal_coords[:, invalid_idx] = self.toroidal_coords[:, invalid_idx][indicators[:, invalid_idx]]
-        return coords
-
-    def consistency_check(self):
-        invalid = [
-            self.is_invalid_harmonic_rep(self.toroidal_coords[:, i]) for i in range(self.n_prominent_feats)
-        ]
-
-        if np.sum(invalid)>0:
-            if np.sum(invalid)==1:
-                invalid_idx = np.flatnonzero(invalid)[0]
-                self.toroidal_coords = self.correct_for_one_inconsistent_toroidal_coord(self.toroidal_coords, invalid_idx)
-            else:
-                warnings.warn(f"There are {np.sum(invalid)}/{self.n_prominent_feats} invalid harmonic reps, could not correct them.")
+    # def transform(self): 
+    #     return self.toroidal_coords
