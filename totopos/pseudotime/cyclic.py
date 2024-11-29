@@ -15,13 +15,13 @@ class CyclicTopologyPseudotime():
     def compute_persistent_cohomology(self, verbose=False):
         """Computes Persistent Cohomology using Bauer's ripser algorithm."""
         self.ph = ToroidalCoords(
-            self.data, n_landmarks=self.n_pts, maxdim=self.maxdim, prime=2, verbose=verbose
+            self.data, n_landmarks=self.n_pts, maxdim=self.maxdim, prime=47, verbose=verbose
         )
 
     def fit(self, perc = .1, check_consistency = False, n_classes = None):
         """Computes harmonic representatives using Scoccola et al. Toroidal Coordinates algorithm.
         """
-        assert 1 in self.n_prominent_feats.keys(), f"Please run estimate_neighborhood_threshold() for dim 1."
+        #assert 1 in self.n_prominent_feats.keys(), f"Please run estimate_neighborhood_threshold() for dim 1."
         n_classes = self.n_prominent_feats[1] if n_classes is None else n_classes
         self.toroidal_coords = self.ph.get_coordinates(
             perc=perc, 
