@@ -12,7 +12,7 @@ class CyclicTopologyPseudotime():
         self.n_pts = n_pts 
         self.maxdim = maxdim
     
-    def compute_persistent_cohomology(self, mode, verbose=False):
+    def compute_persistent_cohomology(self, verbose=False):
         """Computes Persistent Cohomology using Bauer's ripser algorithm."""
         self.ph = ToroidalCoords(
             self.data, n_landmarks=self.n_pts, maxdim=self.maxdim, prime=2, verbose=verbose
