@@ -4,7 +4,8 @@ import numpy as np
 from typing import Tuple
 
 def topological_gene_scores_via_simplification(
-    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, pca:bool = False, n_pcs:int=30
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_radius:float=None,
+    verbose:bool = False, pca:bool = False, n_pcs:int=30
     )->np.ndarray:
     """
     Returns gene scores via topological simplification, i.e. reducing the topological noise from a persistent diagram.
@@ -32,10 +33,11 @@ def topological_gene_scores_via_simplification(
     if verbose:print("Finished differentiable distance calculation.") 
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
+    max_rad = max_dist/2 if max_radius is None else max_radius
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
         max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
-        max_radius=max_dist/2, 
+        max_radius=max_rad, 
         n_threads=n_threads
     )
     if verbose:print(f"Finished filtration {vr_filtration}.")
@@ -62,7 +64,8 @@ def topological_gene_scores_via_simplification(
     return torch.norm(gradient, dim = 0).numpy(), [dgm[i] for i in range(hom_dim+1)]
 
 def topology_layer_perturbation(
-    pts:torch.Tensor, hom_dim:int=1, n_threads:int=16, pca:bool=False, n_pcs:int=20, verbose:bool=False
+    pts:torch.Tensor, hom_dim:int=1, max_radius:float=None,
+    n_threads:int=16, pca:bool=False, n_pcs:int=20, verbose:bool=False
 )->Tuple[torch.tensor, list]:
     """
     Returns topological loss and persistent diagrams for perturbation approach.
@@ -103,8 +106,9 @@ def topology_layer_perturbation(
     max_dist = dists.max()
     dists_np = dists.detach().numpy().astype(np.float64)
     if verbose:print("Calculating Vietoris-Rips filtration...")
+    max_rad = max_dist/2 + .1 if max_radius is None else max_radius
     fil, longest_edges = oin.get_vr_filtration_and_critical_edges_from_pwdists(
-        dists_np, max_dim=2, max_radius = max_dist/2 + .1, n_threads=n_threads
+        dists_np, max_dim=2, max_radius = max_rad, n_threads=n_threads
     )
     if verbose:print(f"Finished filtration {fil}.")
 
@@ -145,7 +149,8 @@ def topology_layer_perturbation(
     return topo_loss, [dgms[i] for i in range(hom_dim+1)]
 
 def topological_gene_scores_via_perturbation(
-    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, verbose:bool = False, epochs:int= 1, pca:bool=False, n_pcs:int=20
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_radius:float=None,
+    verbose:bool = False, epochs:int= 1, pca:bool=False, n_pcs:int=20
 )->Tuple[np.ndarray,list]:
     """
     Returns gene scores and persistent diagrams via a perturbation approach. 
@@ -155,7 +160,7 @@ def topological_gene_scores_via_perturbation(
 
     pts = torch.Tensor(data)
     pts.requires_grad_(True)
-    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, n_threads, pca, n_pcs, verbose)
+    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, max_radius, n_threads, pca, n_pcs, verbose)
     topo_loss.backward()
     grad = pts.grad
     return grad.norm(dim=0).numpy(), [dgms[i] for i in range(hom_dim+1)]
