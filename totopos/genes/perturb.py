@@ -34,7 +34,7 @@ def topological_gene_scores_via_simplification(
     if verbose:print("Finished differentiable distance calculation.") 
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
-    max_rad = min_enclosing_radius_torch(dists) if max_radius is None else max_radius
+    max_rad = min_enclosing_radius_torch(dists) if max_radius is None else max_radius + .2
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
         max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
@@ -107,7 +107,7 @@ def topology_layer_perturbation(
     # max_dist = dists.max()
     dists_np = dists.detach().numpy().astype(np.float64)
     if verbose:print("Calculating Vietoris-Rips filtration...")
-    max_rad = min_enclosing_radius_torch(dists) + .1 if max_radius is None else max_radius
+    max_rad = min_enclosing_radius_torch(dists) + .1 if max_radius is None else max_radius + .2
     fil, longest_edges = oin.get_vr_filtration_and_critical_edges_from_pwdists(
         dists_np, max_dim=2, max_radius = max_rad, n_threads=n_threads
     )
