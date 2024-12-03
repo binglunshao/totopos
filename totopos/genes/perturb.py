@@ -2,6 +2,7 @@ import torch
 import oineus as oin
 import numpy as np 
 from typing import Tuple
+from ..utils.ph_utils import min_enclosing_radius_torch, min_enclosing_radius_subset_torch
 
 def topological_gene_scores_via_simplification(
     data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_radius:float=None,
@@ -29,11 +30,11 @@ def topological_gene_scores_via_simplification(
     if verbose:print("Calculating distances...") 
     sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
     dists = torch.sqrt(sq_dists + epsilon)
-    max_dist = dists.max()
+    # max_dist = dists.max()
     if verbose:print("Finished differentiable distance calculation.") 
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
-    max_rad = max_dist/2 if max_radius is None else max_radius
+    max_rad = min_enclosing_radius_torch(dists) if max_radius is None else max_radius
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
         max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
@@ -103,10 +104,10 @@ def topology_layer_perturbation(
     dists = torch.sqrt(sq_dists + epsilon)
     if verbose:print("Finished differentiable distance calculation.")
     
-    max_dist = dists.max()
+    # max_dist = dists.max()
     dists_np = dists.detach().numpy().astype(np.float64)
     if verbose:print("Calculating Vietoris-Rips filtration...")
-    max_rad = max_dist/2 + .1 if max_radius is None else max_radius
+    max_rad = min_enclosing_radius_torch(dists) + .1 if max_radius is None else max_radius
     fil, longest_edges = oin.get_vr_filtration_and_critical_edges_from_pwdists(
         dists_np, max_dim=2, max_radius = max_rad, n_threads=n_threads
     )
