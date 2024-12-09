@@ -26,7 +26,7 @@ def topological_gene_scores_via_simplification(
 
     if pca:
         if verbose:print("Calculating SVD...") 
-        pts = randomized_pca_torch(pts)
+        pts = randomized_pca_torch(pts, n_pcs)
         # pts1 = pcs.unsqueeze(1)
         # pts2 = pcs.unsqueeze(0)
         if verbose:print("Finished SVD calculation.") 
