@@ -3,6 +3,7 @@ import oineus as oin
 import numpy as np 
 from typing import Tuple
 from ..utils.ph_utils import min_enclosing_radius_torch, min_enclosing_radius_subset_torch
+from ..utils.utils import randomized_pca_torch, differentiable_distance_matrix_torch
 
 def topological_gene_scores_via_simplification(
     data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_distance:float=None,
@@ -25,20 +26,19 @@ def topological_gene_scores_via_simplification(
 
     if pca:
         if verbose:print("Calculating SVD...") 
-        pts_ = pts - pts.mean(dim=0) # mean center data
-        U, s, Vt = torch.svd_lowrank(pts_, q = n_pcs + 50, niter = 2)
-        pcs = U[:, :n_pcs] *  s[:n_pcs]
-        pts1 = pcs.unsqueeze(1)
-        pts2 = pcs.unsqueeze(0)
+        pts = randomized_pca_torch(pts)
+        # pts1 = pcs.unsqueeze(1)
+        # pts2 = pcs.unsqueeze(0)
         if verbose:print("Finished SVD calculation.") 
-    else:
-        pts1 = pts.unsqueeze(1)
-        pts2 = pts.unsqueeze(0)
+    # else:
+    #     pts1 = pts.unsqueeze(1)
+    #     pts2 = pts.unsqueeze(0)
 
-    epsilon = 1e-8
     if verbose:print("Calculating distances...") 
-    sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
-    dists = torch.sqrt(sq_dists + epsilon)
+    dists = differentiable_distance_matrix_torch(pts)
+    # epsilon = 1e-8
+    # sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
+    # dists = torch.sqrt(sq_dists + epsilon)
     if verbose:print("Finished differentiable distance calculation.") 
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
@@ -59,9 +59,10 @@ def topological_gene_scores_via_simplification(
     largest_hom_persistence = top_opt.get_nth_persistence(hom_dim, n_topo_feats)
     
     if verbose:print("Calculating gene scores...")
-    indices, values = top_opt.simplify(largest_hom_persistence, oin.DenoiseStrategy.BirthBirth, hom_dim)
-    critical_sets = top_opt.singletons(indices, values)
-    crit_indices, crit_values = top_opt.combine_loss(critical_sets, oin.ConflictStrategy.Max)
+    # Get spx indices and corresponding filtration values of points in persistence diagram to move 
+    indices, values = top_opt.simplify(largest_hom_persistence, strategy, hom_dim)
+    critical_sets = top_opt.singletons(indices, values) # Compute critical sets
+    crit_indices, crit_values = top_opt.combine_loss(critical_sets, oin.ConflictStrategy.Max) # Resolve strategies
     crit_indices = np.array(crit_indices, dtype=np.int32)
     crit_values = torch.Tensor(crit_values)
     top_loss = torch.norm(vr_filtration.values[crit_indices] - crit_values)
