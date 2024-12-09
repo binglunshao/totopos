@@ -1,5 +1,19 @@
 import torch
 
+def randomized_pca_torch(X, n_pcs): 
+    """Performs PCA using randomized SVD of Halko, Martinsson, and Tropp."""
+    X_ = X - X.mean(dim=0)
+    U, s, Vt = torch.svd_lowrank(X_, q = n_pcs + 50, niter = 2)
+    pcs = U[:, :n_pcs] *  s[:n_pcs]
+    return pcs
+
+def pca_torch(X, n_pcs): 
+    """Performs PCA using randomized SVD."""
+    X_ = X - X.mean(dim=0)
+    U, s, Vt = torch.svd(X_)
+    pcs = U[:, :n_pcs] *  s[:n_pcs]
+    return pcs
+
 def generalized_distance_matrix_torch(X,Y):
     """
     Returns the distances between all datapoints from X and Y,
