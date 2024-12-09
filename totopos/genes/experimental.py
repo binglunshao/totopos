@@ -6,7 +6,7 @@ import oineus as oin
 from ..utils.ph_utils import min_enclosing_radius_torch, get_lifetimes
 from ..utils.utils import randomized_pca_torch, differentiable_distance_matrix_torch
 
-def topological_gene_scores_via_simplification(
+def topological_gene_scores_via_perturbation(
     data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_distance:float=None,
     verbose:bool = False, pca:bool = False, n_pcs:int=30, target_strategy:str="death-death"
     )->Tuple[list, np.ndarray]:
@@ -25,7 +25,7 @@ def topological_gene_scores_via_simplification(
 
     pts = torch.Tensor(data)
     pts.requires_grad_(True);
-    if pca: pts = randomized_pca_torch(pts,n_pcs)
+    if pca: pts = randomized_pca_torch(pts, n_pcs)
     dists = differentiable_distance_matrix_torch(pts)
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
@@ -35,12 +35,12 @@ def topological_gene_scores_via_simplification(
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
         max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
-        max_radius=max_distance, # max_radius is really max_distance... 
+        max_radius=max_distance, # max_radius in oineus is really max_distance... 
         n_threads=n_threads
     )
 
     simplices = [spx.vertices for spx in vr_filtration.cells()]
-    crit_indices=[ simplices.index(spx) for spx in cocycle_edges_largest_hom_class]
+    crit_indices=[simplices.index(spx) for spx in cocycle_edges_largest_hom_class]
     crit_values = np.repeat([death_time], len(crit_indices))
     top_loss = torch.norm(vr_filtration.values[crit_indices] - crit_values)
     top_loss.backward()
