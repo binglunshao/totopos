@@ -5,7 +5,7 @@ from typing import Tuple
 from ..utils.ph_utils import min_enclosing_radius_torch, min_enclosing_radius_subset_torch
 
 def topological_gene_scores_via_simplification(
-    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_radius:float=None,
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_distance:float=None,
     verbose:bool = False, pca:bool = False, n_pcs:int=30
     )->np.ndarray:
     """
@@ -30,15 +30,15 @@ def topological_gene_scores_via_simplification(
     if verbose:print("Calculating distances...") 
     sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
     dists = torch.sqrt(sq_dists + epsilon)
-    # max_dist = dists.max()
+    
     if verbose:print("Finished differentiable distance calculation.") 
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
-    max_rad = min_enclosing_radius_torch(dists) if max_radius is None else max_radius + .2
+    max_distance = 2*min_enclosing_radius_torch(dists) if max_distance is None else max_distance + .2
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
         max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
-        max_radius=max_rad, 
+        max_radius=max_distance, # max_radius is really max_distance... 
         n_threads=n_threads
     )
     if verbose:print(f"Finished filtration {vr_filtration}.")
@@ -56,7 +56,6 @@ def topological_gene_scores_via_simplification(
     crit_indices, crit_values = top_opt.combine_loss(critical_sets, oin.ConflictStrategy.Max)
     crit_indices = np.array(crit_indices, dtype=np.int32)
     crit_values = torch.Tensor(crit_values)
-    #top_loss = torch.mean((vr_filtration.values[crit_indices] - crit_values) ** 2)
     top_loss = torch.norm(vr_filtration.values[crit_indices] - crit_values)
     top_loss.backward()
     if verbose:print("Finished gene score calculation succesfully.")
@@ -65,8 +64,8 @@ def topological_gene_scores_via_simplification(
     return torch.norm(gradient, dim = 0).numpy(), [dgm[i] for i in range(hom_dim+1)]
 
 def topology_layer_perturbation(
-    pts:torch.Tensor, hom_dim:int=1, max_radius:float=None,
-    n_threads:int=16, pca:bool=False, n_pcs:int=20, verbose:bool=False
+    pts:torch.Tensor, hom_dim:int=1, max_distance:float=None,
+    n_threads:int=16, pca:bool=False, n_pcs:int=20, verbose:bool=False, dualize:bool = False
 )->Tuple[torch.tensor, list]:
     """
     Returns topological loss and persistent diagrams for perturbation approach.
@@ -107,9 +106,9 @@ def topology_layer_perturbation(
     # max_dist = dists.max()
     dists_np = dists.detach().numpy().astype(np.float64)
     if verbose:print("Calculating Vietoris-Rips filtration...")
-    max_rad = min_enclosing_radius_torch(dists) + .1 if max_radius is None else max_radius + .2
+    max_distance = 2 * min_enclosing_radius_torch(dists) + .1 if max_distance is None else max_distance + .2
     fil, longest_edges = oin.get_vr_filtration_and_critical_edges_from_pwdists(
-        dists_np, max_dim=2, max_radius = max_rad, n_threads=n_threads
+        dists_np, max_dim=2, max_radius = max_distance, n_threads=n_threads # max_radius is really max_distance... 
     )
     if verbose:print(f"Finished filtration {fil}.")
 
@@ -150,8 +149,8 @@ def topology_layer_perturbation(
     return topo_loss, [dgms[i] for i in range(hom_dim+1)]
 
 def topological_gene_scores_via_perturbation(
-    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_radius:float=None,
-    verbose:bool = False, epochs:int= 1, pca:bool=False, n_pcs:int=20
+    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_distance:float=None,
+    verbose:bool = False, epochs:int= 1, pca:bool=False, n_pcs:int=20, dualize:bool = False
 )->Tuple[np.ndarray,list]:
     """
     Returns gene scores and persistent diagrams via a perturbation approach. 
@@ -161,7 +160,7 @@ def topological_gene_scores_via_perturbation(
 
     pts = torch.Tensor(data)
     pts.requires_grad_(True)
-    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, max_radius, n_threads, pca, n_pcs, verbose)
+    topo_loss, dgms = topology_layer_perturbation(pts, hom_dim, max_distance, n_threads, pca, n_pcs, verbose, dualize=dualize)
     topo_loss.backward()
     grad = pts.grad
     return grad.norm(dim=0).numpy(), [dgms[i] for i in range(hom_dim+1)]
