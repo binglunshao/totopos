@@ -74,7 +74,7 @@ def topological_gene_scores_via_simplification(
 
 def topology_layer_perturbation(
     pts:torch.Tensor, hom_dim:int=1, max_distance:float=None,
-    n_threads:int=16, pca:bool=False, n_pcs:int=20, verbose:bool=False, dualize:bool = False
+    n_threads:int=16, pca:bool=False, n_pcs:int=20, verbose:bool=False, dualize:bool = True
 )->Tuple[torch.tensor, list]:
     """
     Returns topological loss and persistent diagrams for perturbation approach.
