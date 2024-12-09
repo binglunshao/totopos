@@ -15,7 +15,7 @@ def topological_gene_scores_via_simplification(
     """
 
     # thresh could be a little more than death time of the tgt hom class 
-    ph = ripser(data, do_cocycles=True, thresh=)
+    ph = ripser(data, do_cocycles=True, thresh=np.inf if max_distance is None else max_distance + .3)
     cocycles=ph["cocycles"]
     dgms=ph["dgms"]
     lifetimes = get_lifetimes(dgms[1])
