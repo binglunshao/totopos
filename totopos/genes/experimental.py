@@ -25,7 +25,7 @@ def topological_gene_scores_via_simplification(
 
     pts = torch.Tensor(data)
     pts.requires_grad_(True);
-    if pca: pts = randomized_pca_torch(pts)
+    if pca: pts = randomized_pca_torch(pts,n_pcs)
     dists = differentiable_distance_matrix_torch(pts)
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
