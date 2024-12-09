@@ -14,6 +14,15 @@ def pca_torch(X, n_pcs):
     pcs = U[:, :n_pcs] *  s[:n_pcs]
     return pcs
 
+def differentiable_distance_matrix_torch(pts): 
+    pts1 = pts.unsqueeze(1)
+    pts2 = pts.unsqueeze(0)
+
+    epsilon = 1e-8
+    sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
+    dists = torch.sqrt(sq_dists + epsilon)
+    return dists
+
 def generalized_distance_matrix_torch(X,Y):
     """
     Returns the distances between all datapoints from X and Y,
