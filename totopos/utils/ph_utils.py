@@ -9,3 +9,7 @@ def min_enclosing_radius_subset_torch(D, subset_size=1000):
         return D[randixs].max(1).values.min()
     else:
         return D.max(1).values.min()
+
+def get_lifetimes(dgm):
+    """Returns lifetimes given a persistence diagram with format (n,2) array of birth-death pairs"""
+    return dgm[:, 1]- dgm[:, 0]
