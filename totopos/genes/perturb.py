@@ -6,13 +6,22 @@ from ..utils.ph_utils import min_enclosing_radius_torch, min_enclosing_radius_su
 
 def topological_gene_scores_via_simplification(
     data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_distance:float=None,
-    verbose:bool = False, pca:bool = False, n_pcs:int=30
+    verbose:bool = False, pca:bool = False, n_pcs:int=30, target_strategy:str="birth-birth"
     )->np.ndarray:
     """
     Returns gene scores via topological simplification, i.e. reducing the topological noise from a persistent diagram.
     """
+    assert target_strategy in ["birth-birth", "death-death", "midpoint"]
+
+    if target_strategy=="birth-birth": 
+        strategy=oin.DenoiseStrategy.BirthBirth
+    elif target_strategy=="death-death": 
+        strategy = oin.DenoiseStrategy.DeathDeath
+    else: 
+        strategy=oin.DenoiseStrategy.Midway
+
     pts = torch.Tensor(data)
-    pts.requires_grad_(True)
+    pts.requires_grad_(True);
 
     if pca:
         if verbose:print("Calculating SVD...") 
@@ -30,7 +39,6 @@ def topological_gene_scores_via_simplification(
     if verbose:print("Calculating distances...") 
     sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
     dists = torch.sqrt(sq_dists + epsilon)
-    
     if verbose:print("Finished differentiable distance calculation.") 
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
@@ -48,10 +56,10 @@ def topological_gene_scores_via_simplification(
     if verbose:print("Computing persistent homology...")
     dgm = top_opt.compute_diagram(include_inf_points=False)
     if verbose:print("Finished persistent homology calculation.")
-    eps = top_opt.get_nth_persistence(hom_dim, n_topo_feats)
+    largest_hom_persistence = top_opt.get_nth_persistence(hom_dim, n_topo_feats)
     
     if verbose:print("Calculating gene scores...")
-    indices, values = top_opt.simplify(eps, oin.DenoiseStrategy.BirthBirth, hom_dim)
+    indices, values = top_opt.simplify(largest_hom_persistence, oin.DenoiseStrategy.BirthBirth, hom_dim)
     critical_sets = top_opt.singletons(indices, values)
     crit_indices, crit_values = top_opt.combine_loss(critical_sets, oin.ConflictStrategy.Max)
     crit_indices = np.array(crit_indices, dtype=np.int32)
