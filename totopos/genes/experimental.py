@@ -39,7 +39,7 @@ def topological_gene_scores_via_perturbation_ripser(
     cocycle_edges_largest_hom_class = cocycle_edges_largest_hom_class[:, ::-1] # get edges in lexicographic order 
     death_time = dgms[1][ix_largest][1]
 
-    dists = differentiable_distance_matrix_torch(pcs[rep_indices] if n_pts < adata.n_obs else pcs_np)
+    dists = differentiable_distance_matrix_torch(pcs[rep_indices] if n_pts < adata.n_obs else pcs)
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
     
@@ -94,7 +94,7 @@ def topological_gene_scores_via_perturbation_ripser_spf(
     cocycle_edges_largest_hom_class = cocycle_edges_largest_hom_class[:, ::-1] # get edges in lexicographic order 
     death_time = dgms[1][ix_largest][1]
 
-    dists = differentiable_distance_matrix_torch(pcs[ph["idx_perm"]] if n_pts < adata.n_obs else pcs_np)
+    dists = differentiable_distance_matrix_torch(pcs[ph["idx_perm"]] if n_pts < adata.n_obs else pcs)
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
     
