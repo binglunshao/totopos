@@ -1,3 +1,4 @@
+import time
 from ripser import ripser
 from typing import Tuple
 import numpy as np
@@ -25,11 +26,15 @@ def topological_gene_scores_via_perturbation_ripser(
     if n_pts < adata.n_obs: 
         labels, rep_indices, centroids = neighborhood_subsample(pcs_np, n_pts)
 
+    t_init=time.time()
     ph = ripser(
         pcs_np[rep_indices] if n_pts < adata.n_obs else pcs_np, 
         do_cocycles=True, 
         thresh=np.inf if max_distance is None else max_distance*1.1
     )
+    t_end=time.time()
+    t_tot = t_end-t_init
+    if verbose:print(f"PH took {t_tot/60:2.f} mins.")
 
     cocycles=ph["cocycles"]
     dgms=ph["dgms"]
@@ -40,7 +45,7 @@ def topological_gene_scores_via_perturbation_ripser(
     death_time = dgms[1][ix_largest][1]
 
     dists = differentiable_distance_matrix_torch(pcs[rep_indices] if n_pts < adata.n_obs else pcs)
-
+    if verbose:print("Finished computing distances.")
     if verbose:print("Calculating Vietoris-Rips filtration...")
     
     max_distance = 2*min_enclosing_radius_torch(dists) if max_distance is None else max_distance + .2
@@ -52,13 +57,14 @@ def topological_gene_scores_via_perturbation_ripser(
         n_threads=n_threads
     )
 
+    if verbose:print("Computing topological scores")
     simplices = [spx.vertices for spx in vr_filtration.cells()]
     crit_indices = [simplices.index(list(spx)) for spx in cocycle_edges_largest_hom_class]
     crit_values = torch.repeat_interleave(torch.Tensor([death_time]), repeats=len(crit_indices))
     top_loss = torch.norm(vr_filtration.values[crit_indices] - crit_values)
     top_loss.backward()
     gradient = pts.grad
-
+    if verbose:print("Finished.")
     return gradient.norm(dim=0).numpy()
 
 
