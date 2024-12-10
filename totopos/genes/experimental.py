@@ -15,7 +15,7 @@ def topological_gene_scores_via_perturbation(
     """
 
     # thresh could be a little more than death time of the tgt hom class 
-    ph = ripser(data, do_cocycles=True, thresh=np.inf if max_distance is None else max_distance + .3)
+    ph = ripser(data, do_cocycles=True, thresh=np.inf if max_distance is None else max_distance*1.1)
     cocycles=ph["cocycles"]
     dgms=ph["dgms"]
     lifetimes = get_lifetimes(dgms[1])
@@ -35,7 +35,7 @@ def topological_gene_scores_via_perturbation(
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
         max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
-        max_radius=death_time*1.2, # max_radius in oineus is really max_distance... 
+        max_radius=death_time*1.5, # max_radius in oineus is really max_distance... 
         n_threads=n_threads
     )
 
