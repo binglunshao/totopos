@@ -75,6 +75,7 @@ def prim_tree_find_loop(graph, critical_edge, points):
                 try:
                     # Attempt to find a cycle starting from u_edge
                     cycle = nx.find_cycle(G, source=u_edge)
+                    cycle = np.array(cycle)
                     # print(f"Cycle formed after adding critical edge {edge} starting from vertex '{start_vertex}':")
                     # print("Cycle:", cycle)
                     # Return the MST edges plus the critical edge
