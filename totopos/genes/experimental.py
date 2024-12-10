@@ -21,6 +21,7 @@ def topological_gene_scores_via_perturbation(
     lifetimes = get_lifetimes(dgms[1])
     ix_largest = np.argsort(lifetimes)[-1]
     cocycle_edges_largest_hom_class = cocycles[1][ix_largest][:, :2]
+    cocycle_edges_largest_hom_class = cocycle_edges_largest_hom_class[:, ::-1]
     death_time = dgms[1][ix_largest][1]
 
     pts = torch.Tensor(data)
