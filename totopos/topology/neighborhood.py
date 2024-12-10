@@ -55,7 +55,7 @@ def neighborhood_subsample(data, n_clusters):
     km = kmeans(n_clusters=n_clusters)
     km.fit(data)
     labels=km.predict(data)
-    
+
     _, representative_indices = np.unique(labels, return_index=True)
     
-    return labels, representative_indices, km.centroids_
+    return labels, representative_indices, km.km.cluster_centers_
