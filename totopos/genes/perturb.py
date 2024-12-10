@@ -26,19 +26,19 @@ def topological_gene_scores_via_simplification(
 
     if pca:
         if verbose:print("Calculating SVD...") 
-        pts = randomized_pca_torch(pts, n_pcs)
-        # pts1 = pcs.unsqueeze(1)
-        # pts2 = pcs.unsqueeze(0)
+        pcs = randomized_pca_torch(pts, n_pcs)
+        pts1 = pcs.unsqueeze(1)
+        pts2 = pcs.unsqueeze(0)
         if verbose:print("Finished SVD calculation.") 
-    # else:
-    #     pts1 = pts.unsqueeze(1)
-    #     pts2 = pts.unsqueeze(0)
+    else:
+        pts1 = pts.unsqueeze(1)
+        pts2 = pts.unsqueeze(0)
 
     if verbose:print("Calculating distances...") 
-    dists = differentiable_distance_matrix_torch(pts)
-    # epsilon = 1e-8
-    # sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
-    # dists = torch.sqrt(sq_dists + epsilon)
+    #dists = differentiable_distance_matrix_torch(pts)
+    epsilon = 1e-8
+    sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
+    dists = torch.sqrt(sq_dists + epsilon)
     if verbose:print("Finished differentiable distance calculation.") 
 
     if verbose:print("Calculating Vietoris-Rips filtration...")
@@ -46,7 +46,7 @@ def topological_gene_scores_via_simplification(
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
         max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
-        max_radius=max_distance, # max_radius is really max_distance... 
+        max_radius=max_distance, # max_radius in oineus is really max_distance... 
         n_threads=n_threads
     )
     if verbose:print(f"Finished filtration {vr_filtration}.")
@@ -117,7 +117,7 @@ def topology_layer_perturbation(
     if verbose:print("Calculating Vietoris-Rips filtration...")
     max_distance = 2 * min_enclosing_radius_torch(dists) + .1 if max_distance is None else max_distance + .2
     fil, longest_edges = oin.get_vr_filtration_and_critical_edges_from_pwdists(
-        dists_np, max_dim=2, max_radius = max_distance, n_threads=n_threads # max_radius is really max_distance... 
+        dists_np, max_dim=2, max_radius = max_distance, n_threads=n_threads # max_radius in oineus is really max_distance... 
     )
     if verbose:print(f"Finished filtration {fil}.")
 
