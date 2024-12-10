@@ -7,15 +7,15 @@ from ..utils.ph_utils import min_enclosing_radius_torch, get_lifetimes
 from ..utils.utils import randomized_pca_torch, differentiable_distance_matrix_torch
 
 def topological_gene_scores_via_perturbation(
-    data:np.ndarray, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_distance:float=None,
+    data:np.ndarray, n_pts:int=None, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_distance:float=None,
     verbose:bool = False, pca:bool = False, n_pcs:int=30, target_strategy:str="death-death"
     )->Tuple[list, np.ndarray]:
     """
     Returns gene scores using a modification of the perturbation method
     """
-
+    n_pts = len(data) if n_pts is None else n_pts
     # thresh could be a little more than death time of the tgt hom class 
-    ph = ripser(data, do_cocycles=True, thresh=np.inf if max_distance is None else max_distance*1.1)
+    ph = ripser(data, n_perm=n_pts, do_cocycles=True, thresh=np.inf if max_distance is None else max_distance*1.1)
     cocycles=ph["cocycles"]
     dgms=ph["dgms"]
     lifetimes = get_lifetimes(dgms[1])
