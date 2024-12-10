@@ -1,8 +1,10 @@
 import torch
+import time 
+from ripser import ripser 
 import oineus as oin
 import numpy as np 
 from typing import Tuple
-from ..utils.ph_utils import min_enclosing_radius_torch, min_enclosing_radius_subset_torch
+from ..utils.ph_utils import min_enclosing_radius_torch, get_lifetimes
 from ..utils.utils import randomized_pca_torch, differentiable_distance_matrix_torch
 
 def topological_gene_scores_via_simplification(
@@ -173,3 +175,70 @@ def topological_gene_scores_via_perturbation(
     topo_loss.backward()
     grad = pts.grad
     return grad.norm(dim=0).numpy(), [dgms[i] for i in range(hom_dim+1)]
+
+def topological_gene_scores_via_perturbation_ripser(
+    data:np.ndarray, n_pts:int=None, n_threads:int=2, hom_dim:int=1, n_topo_feats:int=1, max_distance:float=None,
+    verbose:bool = False, pca:bool = False, n_pcs:int=30, target_strategy:str="death-death"
+    )->Tuple[list, np.ndarray]:
+    """
+    Returns gene scores using a modification of the perturbation method.
+    Largest homology class gets mapped from (b,d) to (d,d) in pers diagram. 
+    """
+    pts = torch.Tensor(data)
+    pts.requires_grad_(True);
+    if pca:
+        if verbose:print("Calculating SVD...") 
+        pts_ = pts - pts.mean(dim=0) # mean center data
+        U, s, Vt = torch.svd_lowrank(pts_, q = n_pcs + 50, niter = 2)
+        pcs = U[:, :n_pcs] *  s[:n_pcs]
+        pts1 = pcs.unsqueeze(1)
+        pts2 = pcs.unsqueeze(0)
+        if verbose:print("Finished SVD computation.") 
+    else:
+        pts1 = pts.unsqueeze(1)
+        pts2 = pts.unsqueeze(0)
+    
+    if verbose:print("Calculating distances...") 
+    epsilon = 1e-8
+    sq_dists = torch.sum((pts1 - pts2) ** 2, dim=2)
+    dists = torch.sqrt(sq_dists + epsilon)
+    if verbose:print("Finished differentiable distance calculation.")
+
+    t_init=time.time()
+    ph = ripser(
+        pcs.detach().numpy() if pca else data,
+        do_cocycles=True, 
+        thresh=np.inf if max_distance is None else max_distance*1.1
+    )
+    t_end=time.time()
+    t_tot = t_end-t_init
+    if verbose:print(f"PH took {t_tot/60:.2f} mins.")
+
+    cocycles=ph["cocycles"]
+    dgms=ph["dgms"]
+    lifetimes = get_lifetimes(dgms[1])
+    ix_largest = np.argsort(lifetimes)[-1]
+    cocycle_edges_largest_hom_class = cocycles[1][ix_largest][:, :2] # first two entries are edges 
+    cocycle_edges_largest_hom_class = cocycle_edges_largest_hom_class[:, ::-1] # get edges in lexicographic order 
+    death_time = dgms[1][ix_largest][1]
+
+    if verbose:print("Calculating Oineus Vietoris-Rips filtration...")
+    
+    max_distance = 2*min_enclosing_radius_torch(dists) if max_distance is None else max_distance + .2
+    
+    vr_filtration = oin.diff.vietoris_rips_pwdists(
+        dists, 
+        max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
+        max_radius=death_time*1.2, # max_radius in oineus is really max_distance... 
+        n_threads=n_threads
+    )
+
+    if verbose:print("Computing topological scores")
+    simplices = [spx.vertices for spx in vr_filtration.cells()]
+    crit_indices = [simplices.index(list(spx)) for spx in cocycle_edges_largest_hom_class]
+    crit_values = torch.repeat_interleave(torch.Tensor([death_time]), repeats=len(crit_indices))
+    top_loss = torch.norm(vr_filtration.values[crit_indices] - crit_values)
+    top_loss.backward()
+    gradient = pts.grad
+    if verbose:print("Finished.")
+    return gradient.norm(dim=0).numpy()
