@@ -34,7 +34,7 @@ def topological_gene_scores_via_perturbation_ripser(
     )
     t_end=time.time()
     t_tot = t_end-t_init
-    if verbose:print(f"PH took {t_tot/60:2.f} mins.")
+    if verbose:print(f"PH took {t_tot/60:.2f} mins.")
 
     cocycles=ph["cocycles"]
     dgms=ph["dgms"]
