@@ -11,7 +11,7 @@ def topological_gene_scores_via_perturbation(
     verbose:bool = False, pca:bool = False, n_pcs:int=30, target_strategy:str="death-death"
     )->Tuple[list, np.ndarray]:
     """
-    Returns gene scores using simplification method
+    Returns gene scores using a modification of the perturbation method
     """
 
     # thresh could be a little more than death time of the tgt hom class 
@@ -35,15 +35,15 @@ def topological_gene_scores_via_perturbation(
     vr_filtration = oin.diff.vietoris_rips_pwdists(
         dists, 
         max_dim=hom_dim+1, #need the k+1 skeleton for k-homology
-        max_radius=max_distance, # max_radius in oineus is really max_distance... 
+        max_radius=death_time*1.2, # max_radius in oineus is really max_distance... 
         n_threads=n_threads
     )
 
     simplices = [spx.vertices for spx in vr_filtration.cells()]
-    crit_indices=[simplices.index(spx) for spx in cocycle_edges_largest_hom_class]
-    crit_values = np.repeat([death_time], len(crit_indices))
+    crit_indices=[simplices.index(list(spx)) for spx in cocycle_edges_largest_hom_class]
+    crit_values = torch.repeat_interleave(torch.Tensor([death_time]), repeats=len(crit_indices))
     top_loss = torch.norm(vr_filtration.values[crit_indices] - crit_values)
     top_loss.backward()
     gradient = pts.grad
 
-    return torch.norm(gradient, dim = 0).numpy()
+    return gradient.norm(dim=0).numpy()
