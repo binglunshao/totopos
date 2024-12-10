@@ -58,4 +58,4 @@ def neighborhood_subsample(data, n_clusters):
 
     _, representative_indices = np.unique(labels, return_index=True)
     
-    return labels, representative_indices, km.km.cluster_centers_
+    return labels, representative_indices, km.cluster_centers_
