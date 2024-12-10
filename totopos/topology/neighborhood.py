@@ -49,11 +49,13 @@ def largest_neighborhood_lifetime(
 
 
 def neighborhood_subsample(data, n_clusters): 
+    """
+    Returns clustering labels, representative indices and kmeans centroids
+    """
     km = kmeans(n_clusters=n_clusters)
     km.fit(data)
     labels=km.predict(data)
-    # Use numpy.unique to get the first occurrence of each label
+    
     _, representative_indices = np.unique(labels, return_index=True)
     
-    # Return the indices as a list, one for each cluster
-    return labels, representative_indices#.tolist()
+    return labels, representative_indices, km.centroids_
