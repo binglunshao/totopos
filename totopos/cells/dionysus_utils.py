@@ -51,3 +51,27 @@ def get_homology_rep_from_persistence_pair(R:dionysus.ReducedMatrix, filt:dionys
     homology_rep = [dionysus_simplex_to_id_filtvalue(filt[int(index)])[0] for index in homology_chain_ids]
 
     return str_simplex_to_numpy_array(homology_rep)
+
+def homology_generator_dionysus(data:np.ndarray): 
+    """
+    Returns edges of H_1 persistent homology representative with largest lifetime.
+    
+    Params
+    ------
+    data (np.ndarray)
+        Input dataset. 
+
+    Returns 
+    -------
+    homology_representative (list)
+        List containing edges of the homology representative. 
+    """
+    prime = 2  # Use a prime base for the homology coefficients
+    f = dionysus.fill_rips(data, k=2, r=40)  # 2-D simplicial complex up to radius 2
+    R = dionysus.homology_persistence(f, prime=2)
+    dgms = dionysus.init_diagrams(R, f)
+    pairs = get_pairs(R,f)
+    h1_pairs = pairs[1]
+    h1_pairs = sorted(h1_pairs, key = lambda x: x[1])
+    homology_representative = get_homology_rep_from_persistence_pair(R, f, h1_pairs[-1][0])
+    return homology_representative
