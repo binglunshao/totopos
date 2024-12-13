@@ -247,3 +247,16 @@ def get_loop_neighbors(all_data, query_data, radius, leaf_size=40):
     inds = tree.query_radius(query_data, r=radius)
     unique_inds = np.unique(np.concatenate(inds))
     return all_data[unique_inds], unique_inds
+
+def critical_edge_method(data:np.ndarray): 
+    """
+    Returns homology representative of PH class with largest lifetime in Dgm_1(data). 
+    """
+    ph = ripser(data, do_cocycles=True)
+    top_cocycle_data= get_top_cocycles_data(ph,n=1)
+    birth_time=top_cocycle_data[0][0]
+    crit_edge=top_cocycle_data[0][2]
+    one_skeleton = vietoris_rips_graph(data, birth_time,)
+    _, cycle =prim_tree_find_loop(one_skeleton, crit_edge, data)
+    cycle=np.array(cycle)
+    return cycle 
