@@ -16,9 +16,9 @@ def topological_gene_scores_via_simplification(
     """
     assert target_strategy in ["birth-birth", "death-death", "midpoint"]
 
-    if target_strategy=="birth-birth": 
+    if target_strategy=="birth-birth": # decrease death time
         strategy=oin.DenoiseStrategy.BirthBirth
-    elif target_strategy=="death-death": 
+    elif target_strategy=="death-death": # increase birth time
         strategy = oin.DenoiseStrategy.DeathDeath
     else: 
         strategy=oin.DenoiseStrategy.Midway
