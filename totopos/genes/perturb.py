@@ -61,9 +61,14 @@ def topological_gene_scores_via_simplification(
     largest_hom_persistence = top_opt.get_nth_persistence(hom_dim, n_topo_feats)
     
     if verbose:print("Calculating gene scores...")
-    # Get spx indices and corresponding filtration values of points in persistence diagram to move 
-    indices, values = top_opt.simplify(largest_hom_persistence, strategy, hom_dim)
-    critical_sets = top_opt.singletons(indices, values) # Compute critical sets
+    # Get critical spx indices of homology classes in persistence diagram to move 
+    # and values correspond to their new value in the persistence diagram
+    # each pair (idx, target_values)
+    indices, target_values_in_pers_dgm = top_opt.simplify(largest_hom_persistence, strategy, hom_dim)
+    
+    # critical_sets is a list where elements are 
+    # (filtration_value, spx_ids) where spx_ids are the indices of the simplices in the critical set 
+    critical_sets = top_opt.singletons(indices, target_values_in_pers_dgm) 
     crit_indices, crit_values = top_opt.combine_loss(critical_sets, oin.ConflictStrategy.Max) # Resolve strategies
     crit_indices = np.array(crit_indices, dtype=np.int32)
     crit_values = torch.Tensor(crit_values)
@@ -71,7 +76,6 @@ def topological_gene_scores_via_simplification(
     top_loss.backward()
     if verbose:print("Finished gene score calculation succesfully.")
     gradient = pts.grad
-
     return torch.norm(gradient, dim = 0).numpy(), [dgm[i] for i in range(hom_dim+1)]
 
 def topology_layer_perturbation(
