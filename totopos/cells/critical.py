@@ -248,15 +248,29 @@ def get_loop_neighbors(all_data, query_data, radius, leaf_size=40):
     unique_inds = np.unique(np.concatenate(inds))
     return all_data[unique_inds], unique_inds
 
-def critical_edge_method(data:np.ndarray): 
+def critical_edge_method(data:np.ndarray, ph:dict=None): 
     """
     Returns homology representative of PH class with largest lifetime in Dgm_1(data). 
+
+    Params
+    ------
+    data(np.ndarray)
+        Input dataset to extract largest cycle from. 
+    
+    ph (dict, optional)
+        Precomputed PH output from ripser. If None, program will compute PH from scratch.
+
+    Returns
+    -------
+    topological_loop (np.ndarray)
+        (n,2) numpy array containing the 1-chain that represents the topological loop. 
     """
-    ph = ripser(data, do_cocycles=True)
+    if ph == None:
+        ph = ripser(data, do_cocycles=True)
     top_cocycle_data= get_top_cocycles_data(ph,n=1)
     birth_time=top_cocycle_data[0][0]
     crit_edge=top_cocycle_data[0][2]
     one_skeleton = vietoris_rips_graph(data, birth_time,)
-    _, cycle =prim_tree_find_loop(one_skeleton, crit_edge, data)
-    cycle=np.array(cycle)
-    return cycle 
+    _, topological_loop =prim_tree_find_loop(one_skeleton, crit_edge, data)
+    topological_loop = np.array(cycle)
+    return topological_loop 
