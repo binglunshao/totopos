@@ -119,7 +119,6 @@ def vietoris_rips_graph(point_cloud, birth_time, epsilon=1e-4):
     return G
 
 
-
 def get_top_cocycles_data(ph_output_ripser, n=5):
     """
     Returns the top n most persistent cocycles, their birth times, critical edges, and life times from ripser PH computation, 
@@ -235,7 +234,7 @@ def get_loop_neighbors(all_data, query_data, radius, leaf_size=40):
     unique_inds = np.unique(np.concatenate(inds))
     return all_data[unique_inds], unique_inds
 
-def critical_edge_method(data:np.ndarray, ph:dict=None): 
+def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1): 
     """
     Returns homology representative of PH class with largest lifetime in Dgm_1(data). 
 
@@ -249,15 +248,23 @@ def critical_edge_method(data:np.ndarray, ph:dict=None):
 
     Returns
     -------
-    topological_loop (np.ndarray)
-        (n,2) numpy array containing the 1-chain that represents the topological loop. 
+    topological_loop (list)
+        List of (n,2) numpy arrays containing the 1-chain that representing the `n_loops` topological loops 
+        with largest lifetime in the PH computation. 
     """
     if ph == None:
         ph = ripser(data, do_cocycles=True)
-    top_cocycle_data= get_top_cocycles_data(ph,n=1)
-    birth_time=top_cocycle_data[0][0]
-    crit_edge=top_cocycle_data[0][2]
-    one_skeleton = vietoris_rips_graph(data, birth_time,)
-    _, topological_loop =prim_tree_find_loop(one_skeleton, crit_edge, data)
-    topological_loop = np.array(topological_loop)
-    return topological_loop 
+    top_cocycle_data= get_top_cocycles_data(ph,n=n_loops)
+    topo_loops = []
+    for i in range(n_loops):
+        birth_time=top_cocycle_data[i][0]
+        crit_edge=top_cocycle_data[i][2]
+        one_skeleton = vietoris_rips_graph(data, birth_time,)
+        _, topological_loop =prim_tree_find_loop(one_skeleton, crit_edge, data)
+        topological_loop = np.array(topological_loop)
+        topo_loops.append(topological_loop)
+    
+    if n_loops==1:
+        topo_loops= topo_loops[0]
+        
+    return topo_loops
