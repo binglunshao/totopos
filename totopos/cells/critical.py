@@ -118,19 +118,6 @@ def vietoris_rips_graph(point_cloud, birth_time, epsilon=1e-4):
                 G.add_edge(i, j, weight=dist)
     return G
 
-# Count the number of edges with cocycle coefficient 1 along the cycle
-def count_cocycle_edges_in_loop(cycle, cocycle):
-    """
-    Count the number of edges with cocycle coefficient 1 along the cycle.
-
-    Parameters:
-    - cycle (list): The cycle to check.
-    - cocycle (list): The cocycle to check against.
-    """
-    return sum(1 for edge in cycle 
-            if any((edge[0] == cocycle_edge[0] and edge[1] == cocycle_edge[1] and cocycle_edge[2] == 1) 
-                    or (edge[0] == cocycle_edge[1] and edge[1] == cocycle_edge[0] and cocycle_edge[2] == 1) 
-                        for cocycle_edge in cocycle))
 
 
 def get_top_cocycles_data(ph_output_ripser, n=5):
@@ -272,5 +259,5 @@ def critical_edge_method(data:np.ndarray, ph:dict=None):
     crit_edge=top_cocycle_data[0][2]
     one_skeleton = vietoris_rips_graph(data, birth_time,)
     _, topological_loop =prim_tree_find_loop(one_skeleton, crit_edge, data)
-    topological_loop = np.array(cycle)
+    topological_loop = np.array(topological_loop)
     return topological_loop 
