@@ -122,15 +122,15 @@ def vietoris_rips_graph(point_cloud, birth_time, epsilon=1e-4):
 def get_top_cocycles_data(ph_output_ripser, n=5):
     """
     Returns the top n most persistent cocycles, their birth times, critical edges, and life times from ripser PH computation, 
-    sorted by birth time in descending order.
+    sorted by persistence in descending order.
 
     Parameters:
     - ph_output_ripser (dict): The ph_output_ripser dictionary from ripser containing 'dgms' and 'cocycles'.
     - n (int): The number of top persistent cocycles to extract.
 
     Returns:
-    - list: A list of tuples containing the birth time, cocycle, critical edge, and persistence.
-        The cocycles are sorted by birth time in descending order.
+    - list: A list of dictionaries containing the birth time, cocycle, critical edge, and persistence.
+        The cocycles are sorted by persistence in descending order.
     """
 
     # Extract the persistence diagram for H1 (1-dimensional features)
@@ -138,26 +138,25 @@ def get_top_cocycles_data(ph_output_ripser, n=5):
     
     # Calculate persistence (death - birth) and sort by persistence in descending order
     persistence = h1_dgm[:, 1] - h1_dgm[:, 0]
-    sorted_indices = np.argsort(-persistence)
+    sorted_indices = np.argsort(persistence)[::-1]
     
     # Get the top n most persistent cocycles
     top_n_indices = sorted_indices[:n]
     
-    birth_critical_edge = []
+    cocycle_data = []
     for i in top_n_indices:
         cocycle = ph_output_ripser['cocycles'][1][i]
         birth_time = h1_dgm[i, 0]
         u, v, coeff = cocycle[0]
-        assert coeff == 1, "Cocycle edge must have coefficient 1"
         critical_edge = (u, v)
         pers = persistence[i]
-        birth_critical_edge.append((birth_time, cocycle, critical_edge, pers))
+        cocycle_data.append(
+            {"birth_time":birth_time, "cocycle":cocycle, "critical_edge":critical_edge, "pers": pers}
+        )
 
     # Sort the cocycles by birth time in descending order
-    birth_critical_edge.sort(key=lambda x: x[0], reverse=True)
-
-    return birth_critical_edge
-
+    # cocycle_data.sort(key=lambda x: x["birth_time"], reverse=True)
+    return cocycle_data
 
 def get_all_loop_nodes(top_cocycles_data, points):
     """
@@ -248,23 +247,26 @@ def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1):
 
     Returns
     -------
-    topological_loop (list)
-        List of (n,2) numpy arrays containing the 1-chain that representing the `n_loops` topological loops 
-        with largest lifetime in the PH computation. 
+    top_cocycle_data (list)
+        List of `n_loops` dictionaries containing topological information. 
+        The item for key "loop" is a size (n,2) numpy array containing the edges of the 
+        topological loop with largest lifetime in the PH computation.
     """
     if ph == None:
         ph = ripser(data, do_cocycles=True)
     top_cocycle_data= get_top_cocycles_data(ph,n=n_loops)
-    topo_loops = []
+    #topo_loops = []
     for i in range(n_loops):
-        birth_time=top_cocycle_data[i][0]
-        crit_edge=top_cocycle_data[i][2]
-        one_skeleton = vietoris_rips_graph(data, birth_time,)
-        _, topological_loop =prim_tree_find_loop(one_skeleton, crit_edge, data)
+        birth_time=top_cocycle_data[i]["birth_time"]
+        crit_edge=top_cocycle_data[i]["critical_edge"]
+        one_skeleton = vietoris_rips_graph(data, birth_time)
+        _, topological_loop = prim_tree_find_loop(one_skeleton, crit_edge, data)
         topological_loop = np.array(topological_loop)
-        topo_loops.append(topological_loop)
+        #topo_loops.append(topological_loop)
+        top_cocycle_data[i]["loop"] = topological_loop
     
     if n_loops==1:
-        topo_loops= topo_loops[0]
-        
-    return topo_loops
+        return [top_cocycle_data[0]]
+        #topo_loops= topo_loops[0]
+
+    return top_cocycle_data[:n_loops]
