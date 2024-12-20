@@ -10,19 +10,23 @@ import networkx as nx
 import heapq
 from sklearn.neighbors import BallTree
 
-def prim_tree_find_loop(graph, critical_edge, points):
+def prim_tree_find_loop(graph: dict, critical_edge: tuple, points: np.ndarray):
     """
-    Construct a tree where the starting vertex has degree 1.
-    After adding the critical critical_edge, check if a cycle is formed using NetworkX.
-    Loops over multiple possible starting vertices.
+    Returns the MST edges and the cycle formed by adding the critical edge.
 
-    Parameters:
-    - graph (dict): The graph as an adjacency list.
-    - critical_edge (tuple): The critical critical_edge to add to the tree.
-    - points (np.ndarray): The points in the graph.
+    Params
+    --------
+    graph (dict)
+        The graph as an adjacency list.
+    critical_edge (tuple)
+        The critical edge to add to the tree.
+    points (np.ndarray)
+        The points in the graph.
 
-    Returns:
-    - (tuple): A tuple of the MST critical_edges and the cycle formed by adding the critical critical_edge.
+    Returns
+    --------
+    (mst_edges, cycle)
+        A tuple of the MST edges and the cycle formed by adding the critical edge.
     """
     u_edge, v_edge = critical_edge[0], critical_edge[1]
 
@@ -94,18 +98,24 @@ def prim_tree_find_loop(graph, critical_edge, points):
     # print("No cycle formed with the given starting vertices and critical edge.")
     return None
 
-def vietoris_rips_graph(point_cloud, birth_time, epsilon=1e-4):
-    '''
-    Create a Vietoris-Rips graph from a point cloud using the birth time as = a threshold.
-    
-    Parameters:
-    - point_cloud (np.ndarray): The point cloud to create the graph from.
-    - birth_time (float): The birth distance threshold of the cocycle.
-    - epsilon (float, optional): For numerical stability, by default 1e-4.
+def vietoris_rips_graph(point_cloud: np.ndarray, birth_time: float, epsilon: float = 1e-4) -> nx.Graph:
+    """
+    Returns a Vietoris-Rips graph from a point cloud using the birth time as a threshold.
 
-    Returns:
-    - nx.Graph: The sparse graph.
-    '''
+    Params
+    --------
+    point_cloud (np.ndarray)
+        The point cloud to create the graph from.
+    birth_time (float)
+        The birth distance threshold of the cocycle.
+    epsilon (float, optional)
+        For numerical stability, default is 1e-4.
+
+    Returns
+    --------
+    nx.Graph
+        The Vietoris-Rips graph.
+    """
     
     threshold = birth_time + epsilon
 
@@ -118,19 +128,21 @@ def vietoris_rips_graph(point_cloud, birth_time, epsilon=1e-4):
                 G.add_edge(i, j, weight=dist)
     return G
 
-
-def get_top_cocycles_data(ph_output_ripser, n=5):
+def get_top_cocycles_data(ph_output_ripser: dict, n: int = 5) -> list:
     """
-    Returns the top n most persistent cocycles, their birth times, critical edges, and life times from ripser PH computation, 
-    sorted by persistence in descending order.
+    Extracts the top n most persistent cohomology generator data from ripser PH output.
 
-    Parameters:
-    - ph_output_ripser (dict): The ph_output_ripser dictionary from ripser containing 'dgms' and 'cocycles'.
-    - n (int): The number of top persistent cocycles to extract.
+    Params
+    --------
+    ph_output_ripser (dict)
+        The ripser output dictionary containing 'dgms' and 'cocycles'.
+    n (int, optional)
+        The number of top persistent cocycles to extract, default is 5.
 
-    Returns:
-    - list: A list of dictionaries containing the birth time, cocycle, critical edge, and persistence.
-        The cocycles are sorted by persistence in descending order.
+    Returns
+    --------
+    list
+        A list of dictionaries containing the birth time, cocycle, critical edge, and persistence.
     """
 
     # Extract the persistence diagram for H1 (1-dimensional features)
@@ -160,17 +172,19 @@ def get_top_cocycles_data(ph_output_ripser, n=5):
 
 def get_all_loop_nodes(top_cocycles_data, points):
     """
-    Extract the set of nodes in all loops from the top cocycles
-    by finding the loop with the critical edge in the spanning tree.
-    The sparse graph is constructed only once using the cocycle with 
-    the highest birth distance threshold for efficiency.
+    Returns a list of nodes in all loops from the top cocycles.
 
-    Parameters:
-    - top_cocycles (list): The top cocycles extracted from the ripser result.
-    - points (np.ndarray): The point cloud.
+    Params
+    --------
+    top_cocycles_data (list)
+        The top cocycles extracted from the ripser result.
+    points (np.ndarray)
+        The point cloud.
 
-    Returns:
-    - list: A list of nodes in all loops.
+    Returns
+    --------
+    list
+        A list of nodes in all loops.
     """
 
     birth_time, _, edge, _ = top_cocycles_data[0]
@@ -190,43 +204,26 @@ def get_all_loop_nodes(top_cocycles_data, points):
 
     return list(cycle_nodes)
 
-def get_loop_inds(all_labels, cycle_nodes, unique_labels):
-    """Locate the indices of the loop nodes in the original data."""
-    return np.where(np.isin(all_labels, unique_labels[cycle_nodes]))[0]
 
-def get_loop_coords(cycle, all_labels, u_labels, orig_data):
+def get_loop_neighbors(all_data: np.ndarray, query_data: np.ndarray, radius: float, leaf_size: int = 40) -> tuple:
     """
-    Find the coordinates of the loop nodes in the original data.
+    Returns the neighbors of the loop nodes in the original data using a BallTree.
 
-    Parameters:
-    - cycle (list): The loop to extract nodes from.
-    - all_labels (np.ndarray): The cluster labels of the original data.
-    - u_labels (np.ndarray): The unique labels.
-    - orig_data (np.ndarray): The original data.
+    Params
+    --------
+    all_data (np.ndarray)
+        The original data.
+    query_data (np.ndarray)
+        The loop nodes.
+    radius (float)
+        The radius of the neighborhood.
+    leaf_size (int, optional)
+        The leaf size of the BallTree, default is 40.
 
-    Returns:
-    - np.ndarray: The coordinates of the loop nodes in the original data.
-    """
-    cycle_nodes = set()
-    for edge in cycle:
-        cycle_nodes.update(edge)
-    cycle_nodes = list(cycle_nodes)
-    cycle_inds = np.where(np.isin(all_labels, u_labels[cycle_nodes]))[0]
-    return orig_data[cycle_inds]
-
-def get_loop_neighbors(all_data, query_data, radius, leaf_size=40):
-    """
-    Get the neighbors of the loop nodes in the original data using a BallTree.
-    
-    Parameters:
-    - all_data (np.ndarray): The original data.
-    - query_data (np.ndarray): The loop nodes.
-    - radius (float): The radius of the neighborhood.
-    - leaf_size (int, optional): The leaf size of the BallTree, by default 40
-    (smaller leaf size is faster but uses more memory).
-    
-    Returns:
-    - tuple: A tuple of the neighbor data and indices.
+    Returns
+    --------
+    tuple
+        A tuple of the neighbor data and indices.
     """
     tree = BallTree(all_data, leaf_size=leaf_size)
     inds = tree.query_radius(query_data, r=radius)
