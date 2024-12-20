@@ -6,16 +6,25 @@ from dreimac import ToroidalCoords
 # from ripser import ripser
 import warnings
 
-class CyclicTopologyPseudotime(): 
-    def __init__(self, data, n_pts = None, maxdim=1):
+class CyclicTopologyPseudotime():
+    """Class to compute pseudotime coordinates for cyclic trajectories.
+    """ 
+    def __init__(self, data, n_pts = None):
+        """
+        Parameters
+        ----------
+        data (np.array)
+
+        n_pts (int)
+            Subsample size to compute homology and pseudotime coordinates. 
+        """
         self.data = data
-        self.n_pts = n_pts 
-        self.maxdim = maxdim
+        self.n_pts = n_pts if n_pts is not None else len(data)
     
     def compute_persistent_cohomology(self, verbose=False):
         """Computes Persistent Cohomology using Bauer's ripser algorithm."""
         self.ph = ToroidalCoords(
-            self.data, n_landmarks=self.n_pts, maxdim=self.maxdim, prime=47, verbose=verbose
+            self.data, n_landmarks=self.n_pts, maxdim=1, prime=47, verbose=verbose
         )
 
     def fit(self, perc = .1, check_consistency = False, n_classes = None):
