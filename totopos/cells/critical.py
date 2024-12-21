@@ -1,23 +1,19 @@
 import numpy as np
 import anndata as ad
-from os.path import join
-import math
-import pandas as pd
 import time
 from ripser import ripser
-from persim import plot_diagrams
 import networkx as nx
 import heapq
 from sklearn.neighbors import BallTree
 
-def prim_tree_find_loop(graph: dict, critical_edge: tuple, points: np.ndarray):
+def prim_tree_find_loop(graph: nx.Graph, critical_edge: tuple, points: np.ndarray):
     """
     Returns the MST edges and the cycle formed by adding the critical edge.
 
     Params
     --------
-    graph (dict)
-        The graph as an adjacency list.
+    graph (nx.Graph)
+        A Vietoris-Rips NetworkX graph.
     critical_edge (tuple)
         The critical edge to add to the tree.
     points (np.ndarray)
