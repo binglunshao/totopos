@@ -1,1 +1,1 @@
-from .critical import critical_edge_method, get_loop_neighbors
+from .critical import *
