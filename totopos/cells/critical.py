@@ -1,5 +1,6 @@
 import numpy as np
 import anndata as ad
+from tqdm import tqdm
 import time
 from ripser import ripser
 import networkx as nx
@@ -249,7 +250,9 @@ def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1):
         ph = ripser(data, do_cocycles=True)
     top_cocycle_data= get_top_cocycles_data(ph,n=n_loops)
     #topo_loops = []
-    for i in range(n_loops):
+    iterable = range(n_loops) if n_loops==1 else tqdm(range(n_loops))
+    
+    for i in iterable:
         birth_time=top_cocycle_data[i]["birth_time"]
         crit_edge=top_cocycle_data[i]["critical_edge"]
         one_skeleton = vietoris_rips_graph(data, birth_time)
