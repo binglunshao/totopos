@@ -227,9 +227,9 @@ def get_loop_neighbors(all_data: np.ndarray, query_data: np.ndarray, radius: flo
     unique_inds = np.unique(np.concatenate(inds))
     return all_data[unique_inds], unique_inds
 
-def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1): 
+def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False): 
     """
-    Returns homology representative of PH class with largest lifetime in Dgm_1(data). 
+    Returns homology representatives of `n_loops` homology classes with largest lifetimes in Dgm_1(data). 
 
     Params
     ------
@@ -238,6 +238,11 @@ def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1):
     
     ph (dict, optional)
         Precomputed PH output from ripser. If None, program will compute PH from scratch.
+    
+    n_loops(int)
+
+    verbose(bool, default=False)
+        If set to True, print statements of algorithm steps will be delidered. 
 
     Returns
     -------
@@ -248,21 +253,26 @@ def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1):
     """
     if ph == None:
         ph = ripser(data, do_cocycles=True)
+        if verbose:print("Finished computing PH")
+
     top_cocycle_data= get_top_cocycles_data(ph,n=n_loops)
-    #topo_loops = []
+
     iterable = range(n_loops) if n_loops==1 else tqdm(range(n_loops))
     
     for i in iterable:
         birth_time=top_cocycle_data[i]["birth_time"]
         crit_edge=top_cocycle_data[i]["critical_edge"]
+        if verbose:print("Starting VR graph construction.")
         one_skeleton = vietoris_rips_graph(data, birth_time)
+        if verbose:print(f"Finished VR graph. Starting {i}-th loop discovery...")
         _, topological_loop = prim_tree_find_loop(one_skeleton, crit_edge, data)
+        if verbose:print("Finished computing loop from VR graph.")
         topological_loop = np.array(topological_loop)
-        #topo_loops.append(topological_loop)
         top_cocycle_data[i]["loop"] = topological_loop
     
     if n_loops==1:
         return [top_cocycle_data[0]]
         #topo_loops= topo_loops[0]
 
+    if verbose: print("Finished critical edge algorithm.")
     return top_cocycle_data[:n_loops]
