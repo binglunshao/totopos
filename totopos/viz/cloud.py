@@ -1,9 +1,10 @@
 from plotly import graph_objects as go
 from plotly.colors import qualitative
+import pandas as pd
 
 def plot_all_loops_3d(
     data, cycle_list, birth_times, life_times,
-    title=None, pcs_viz=(0, 1, 2), color_col=None, hover_cols=None, pc_prefix="pc"
+    title=None, pcs_viz=(0, 1, 2), color_col=None, hover_cols=None, pc_prefix="pc", white_background:bool=True
 ):
     """
     Returns a plotly interactive figure with all loops in 3D.
@@ -81,22 +82,34 @@ def plot_all_loops_3d(
             )
         )
 
-    # Create the figure with node trace and cycle traces
-    fig = go.Figure(data=[node_trace] + cycle_traces)
-    fig.update_layout(
-        title=title,
-        showlegend=True,
-        width=1000,
-        height=800,
-        scene=dict(
-            xaxis_title=f"{pc_prefix} {pcs_viz[0]}",
-            yaxis_title=f"{pc_prefix} {pcs_viz[1]}",
-            zaxis_title=f"{pc_prefix} {pcs_viz[2]}",
-        ),
-    )
-    
-    #fig.show()
-    return fig
+        # Create the figure with node trace and cycle traces
+        fig = go.Figure(data=[node_trace] + cycle_traces)
+
+        layout_options = {
+            "title": title,
+            "showlegend": True,
+            "width": 1000,
+            "height": 800,
+            "scene": dict(
+                xaxis_title=f"{pc_prefix} {pcs_viz[0]}",
+                yaxis_title=f"{pc_prefix} {pcs_viz[1]}",
+                zaxis_title=f"{pc_prefix} {pcs_viz[2]}",
+            ),
+        }
+
+    # Apply white background if specified
+    if white_background:
+        layout_options.update({
+            "plot_bgcolor": "white",
+            "paper_bgcolor": "white",
+            "scene": dict(
+                xaxis=dict(backgroundcolor="white"),
+                yaxis=dict(backgroundcolor="white"),
+                zaxis=dict(backgroundcolor="white"),
+            ),
+        })
+    fig.update_layout(**layout_options)
+    return fig 
 
 
 def annotated_scatter_3d(df, x_col, y_col, z_col, color_col=None, hover_cols=None):
