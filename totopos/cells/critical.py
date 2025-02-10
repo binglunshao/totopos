@@ -125,16 +125,18 @@ def vietoris_rips_graph(point_cloud: np.ndarray, birth_time: float, epsilon: flo
                 G.add_edge(i, j, weight=dist)
     return G
 
-def get_top_cocycles_data(ph_output_ripser: dict, n: int = 5) -> list:
+def get_top_cocycles_data(ph_output: dict, n: int = 5, method:str = "ripser") -> list:
     """
     Extracts the top n most persistent cohomology generator data from ripser PH output.
 
     Params
     --------
-    ph_output_ripser (dict)
-        The ripser output dictionary containing 'dgms' and 'cocycles'.
+    ph_output (dict)
+        The PH output dictionary containing 'dgms' and 'cocycles'.
     n (int, optional)
         The number of top persistent cocycles to extract, default is 5.
+    method (str, default = "ripser")
+        One of [`ripser`, `dreimac`]. Specifies the type of PH output.
 
     Returns
     --------
@@ -143,7 +145,7 @@ def get_top_cocycles_data(ph_output_ripser: dict, n: int = 5) -> list:
     """
 
     # Extract the persistence diagram for H1 (1-dimensional features)
-    h1_dgm = ph_output_ripser['dgms'][1]
+    h1_dgm = ph_output['dgms'][1] if method == "ripser" else ph_output.dgms_[1]
     
     # Calculate persistence (death - birth) and sort by persistence in descending order
     persistence = h1_dgm[:, 1] - h1_dgm[:, 0]
@@ -154,7 +156,7 @@ def get_top_cocycles_data(ph_output_ripser: dict, n: int = 5) -> list:
     
     cocycle_data = []
     for i in top_n_indices:
-        cocycle = ph_output_ripser['cocycles'][1][i]
+        cocycle = ph_output['cocycles'][1][i] if method == "ripser" else ph_output.cocycles_[1][i]
         birth_time = h1_dgm[i, 0]
         u, v, coeff = cocycle[0]
         critical_edge = (u, v)
