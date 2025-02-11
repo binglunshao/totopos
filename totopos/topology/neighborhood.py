@@ -54,8 +54,12 @@ def neighborhood_subsample(data, n_clusters):
     """
     km = kmeans(n_clusters=n_clusters)
     km.fit(data)
-    labels=km.predict(data)
-
-    _, representative_indices = np.unique(labels, return_index=True)
+    labels = km.predict(data)
+    
+    # Find the indices of the points closest to the cluster centers
+    representative_indices = []
+    for center in km.cluster_centers_:
+        distances = np.linalg.norm(data - center, axis=1)
+        representative_indices.append(np.argmin(distances))
     
     return labels, representative_indices, km.cluster_centers_
