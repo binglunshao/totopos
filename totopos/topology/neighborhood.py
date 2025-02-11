@@ -57,9 +57,9 @@ def neighborhood_subsample(data, n_clusters):
     labels = km.predict(data)
     
     # Find the indices of the points closest to the cluster centers
-    representative_indices = []
-    for center in km.cluster_centers_:
+    representative_indices = np.zeros(n_clusters,dtype=int)
+    for i,center in enumerate(km.cluster_centers_):
         distances = np.linalg.norm(data - center, axis=1)
-        representative_indices.append(np.argmin(distances))
+        representative_indices[i]= np.argmin(distances)
     
     return labels, representative_indices, km.cluster_centers_
