@@ -1,1 +1,1 @@
-from .cloud import plot_all_loops_3d
+from .cloud import plot_all_loops_3d, plot_pers_diag_ripser, visualize_h1
