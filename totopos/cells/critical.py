@@ -256,8 +256,9 @@ def critical_edge_method(
         topological loop with largest lifetime in the PH computation.
     """
     if ph == None:
+        if verbose: print("Starting de novo PH computation...")
         ph = ripser(data, do_cocycles=True)
-        if verbose:print("Finished computing PH")
+        if verbose:print("Finished computing PH.")
 
     top_cocycle_data= get_top_cocycles_data(ph,n=n_loops)
 
