@@ -28,6 +28,8 @@ def prim_tree_find_loop(graph: nx.Graph, critical_edge: tuple, points: np.ndarra
     u_edge, v_edge = critical_edge[0], critical_edge[1]
 
     for start_vertex in [u_edge, v_edge]:
+        if start_vertex not in graph:
+            continue
         # Get all edges from the start vertex, sorted by weight
         edges_from_start = sorted(graph[start_vertex], key=lambda x: graph[start_vertex][x]['weight'])
         
