@@ -226,10 +226,11 @@ def replace_inf(arrays):
     return modified_arrays, max_val
 
 
-def visualize_h1(data, h1_simplex_list, pal = None): 
+def visualize_h1(data, h1_simplex_list, pal = None, fig = None): 
     pal = cat_color_list() if pal is None else pal
     
-    fig = plt.figure(figsize=(4,4))
+    if fig is None:
+        fig = plt.figure(figsize=(4,4))
     ax=fig.add_subplot(projection="3d")
 
     n_loops = len(h1_simplex_list)
