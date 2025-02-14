@@ -1,10 +1,24 @@
 from plotly import graph_objects as go
 from plotly.colors import qualitative
+from matplotlib import pyplot as plt
+import numpy as np 
 import pandas as pd
+import copy
+cat = np.concatenate
+
+def inna_palette():
+    return ["#65bec3", "#94c77f", "#f06341", "#642870", "#35b779", "#d1cf5e", "#4572ab", "#f58669", ]
+
+def caltech_palette(): 
+    return ["#000", "#d95f02", "#7570b3", "#a6761d", "#666666"]
+
+def cat_color_list():
+    return ['#7fc97f','#beaed4','#fdc086','#ffff99','#386cb0','#f0027f','#bf5b17','#666666']
 
 def plot_all_loops_3d(
     data, cycle_list, birth_times, life_times,
-    title=None, pcs_viz=(0, 1, 2), color_col=None, hover_cols=None, pc_prefix="pc", white_background:bool=True
+    title=None, pcs_viz=(0, 1, 2), color_col=None, hover_cols=None, pc_prefix="pc", white_background:bool=True,
+    palette_scatter=None
 ):
     """
     Returns a plotly interactive figure with all loops in 3D.
@@ -38,6 +52,12 @@ def plot_all_loops_3d(
     pc_prefix (str, optional)
         Prefix for principal component labels. Default is "pc".
     
+    white_background (bool, optional)
+        If True, the background will be white. Default is True.
+    
+    palette_scatter (str, optional)
+        Color palette for the scatter plot. Default is None.
+    
     Returns
     -------
     fig (plotly.graph_objects.Figure)
@@ -51,7 +71,7 @@ def plot_all_loops_3d(
     pal = ["#000", "#d95f02", "#7570b3", "#a6761d", '#7fc97f','#beaed4','#fdc086','#ffff99','#386cb0','#f0027f','#bf5b17','#666666']
 
     # Create the node trace using annotated_scatter_3d
-    node_trace = annotated_scatter_3d(data, x_col, y_col, z_col, color_col, hover_cols)
+    node_trace = annotated_scatter_3d(data, x_col, y_col, z_col, color_col, hover_cols, palette_scatter)
 
     # Create edge traces for each cycle
     cycle_traces = []
@@ -168,3 +188,119 @@ def annotated_scatter_3d(df, x_col, y_col, z_col, color_col=None, hover_cols=Non
     )
 
     return scatter
+
+
+
+def replace_inf(arrays):
+    """Given a list of persistence diagrams (birth,death pairs) returns diagrams by modifying 
+    death values set to infty to the largest finite death time across all diagrams, and the largest death time.
+
+    Params
+    ------
+    arrays (list)
+        List of (n,2) persistence diagrams.
+    
+    Returns
+    -------
+    modified_arrays (list)
+        List of modified persistence diagrams.
+    
+    max_val (float)
+        Death time with largest (finite) magnitude.
+    """
+    max_val = -np.inf
+    for array in arrays:
+        max_val = max(max_val, np.max(array[np.isfinite(array[:,1]), 1]))
+    
+    max_val += .3 # add an extra quantity for visualization purposes
+
+    modified_arrays = []
+    for array in arrays:
+        if np.any(np.isinf(array[:, 1])):
+            mod_array = copy.deepcopy(array)
+            mod_array[mod_array[:,1] == np.inf, 1] = max_val
+            modified_arrays.append(mod_array)
+        else: 
+            modified_arrays.append(array)
+
+    return modified_arrays, max_val
+
+
+def visualize_h1(data, h1_simplex_list, pal = None): 
+    pal = cat_color_list() if pal is None else pal
+    
+    fig = plt.figure(figsize=(4,4))
+    ax=fig.add_subplot(projection="3d")
+
+    n_loops = len(h1_simplex_list)
+
+    for k in range(n_loops):
+        for edge in h1_simplex_list[k]: 
+            source, tgt= edge
+            data_plot=cat([data[np.array([source]), :3], data[np.array([tgt]), :3]], 0)
+            ax.plot(*data_plot.T, color = pal[k], linewidth=3)
+
+    ax.scatter(*data[:, :3].T, s = 1, color = "grey",alpha=.2)
+
+    ax.azim=50
+    plt.axis("off")
+    return fig
+
+def plot_pers_diag_ripser(dgms:list, ax = None, dot_size = 40, conf_int=None, pal = None):
+    """
+    Plot persistence diagrams using custom color palette.
+
+    Params
+    ------
+    dgms (list of np.ndarrays)
+        Coordinates for (births, deaths) of each persistent feature across dimensions.
+        The i-th list is the persistent diagram of dimension i.
+    
+    ax (matplotlib.axes._axes.Axes)
+
+    dot_size (int)
+
+    conf_int (float)
+    
+    pal (list)
+    """
+    n_dgms = len(dgms)
+    
+    dgms_, max_val = replace_inf(dgms)
+    ax = ax or plt.gca()
+    pal = caltech_palette() if pal is None else pal
+    
+    ax.scatter(
+        *dgms_[0].T,
+        linewidth=0.1,
+        alpha=0.7,
+        s = dot_size,
+        color=pal[0],
+        edgecolors="lightgrey",
+        label="$H_0$"
+    )
+
+    for i in range(1, n_dgms):
+        #plt
+        ax.scatter(
+            *dgms[i].T,
+            linewidth=0.1,
+            alpha=0.7,
+            s = dot_size,
+            color=pal[i],
+            edgecolors="lightgrey",
+            label= f"$H_{i}$"
+        )
+
+    ax.axhline(max_val, linestyle="--", color="grey", label="$\infty$")
+
+    ax.plot([0,max_val+.5], [0, max_val+.5], color = "grey")
+
+    if conf_int is not None: 
+        ax.fill_between(x= [0, max_val+.5] , y1= [0, max_val+.5], y2=[conf_int,  max_val + conf_int + .5], alpha = 0.3, color = "lightgrey")
+
+    ax.set_xlim(-.3, max_val)
+    ax.set_ylim(0, max_val +.5)
+    ax.set_xlabel("birth")
+    ax.set_ylabel("death")
+    plt.legend()
