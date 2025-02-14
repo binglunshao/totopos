@@ -229,9 +229,11 @@ def get_loop_neighbors(all_data: np.ndarray, query_data: np.ndarray, radius: flo
     unique_inds = np.unique(np.concatenate(inds))
     return all_data[unique_inds], unique_inds
 
-def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False): 
+def critical_edge_method(
+    data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False
+    )->list: 
     """
-    Returns homology representatives of `n_loops` homology classes with largest lifetimes in Dgm_1(data). 
+    Returns a list homology data for `n_loops` with largest lifetimes in Dgm_1(data). 
 
     Params
     ------
@@ -266,7 +268,7 @@ def critical_edge_method(data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose
         crit_edge=top_cocycle_data[i]["critical_edge"]
         if verbose:print("Starting VR graph construction.")
         one_skeleton = vietoris_rips_graph(data, birth_time)
-        if verbose:print(f"Finished VR graph. Starting {i}-th loop discovery...")
+        if verbose:print(f"Finished VR graph. Starting {i+1}-th loop discovery...")
         _, topological_loop = prim_tree_find_loop(one_skeleton, crit_edge, data)
         if verbose:print("Finished computing loop from VR graph.")
         topological_loop = np.array(topological_loop)
