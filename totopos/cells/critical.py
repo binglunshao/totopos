@@ -267,10 +267,10 @@ def critical_edge_method(
     iterable = range(n_loops) if n_loops==1 else tqdm(range(n_loops))
     
     for i in iterable:
-        birth_time=top_cocycle_data[i]["birth_time"]
+        birth_dist=top_cocycle_data[i]["birth_dist"]
         crit_edge=top_cocycle_data[i]["critical_edge"]
         if verbose:print("Starting VR graph construction.")
-        one_skeleton = vietoris_rips_graph(data, birth_time)
+        one_skeleton = vietoris_rips_graph(data, birth_dist)
         if verbose:print(f"Finished VR graph. Starting {i+1}-th loop discovery...")
         _, topological_loop = prim_tree_find_loop(one_skeleton, crit_edge, data)
         if verbose:print("Finished computing loop from VR graph.")
