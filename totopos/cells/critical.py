@@ -164,7 +164,7 @@ def get_top_cocycles_data(ph_output: dict, n: int = 5, method:str = "ripser") ->
         critical_edge = (u, v)
         pers = persistence[i]
         cocycle_data.append(
-            {"birth_time":birth_time, "cocycle":cocycle, "critical_edge":critical_edge, "pers": pers}
+            {"birth_dist":birth_time, "cocycle":cocycle, "critical_edge":critical_edge, "pers": pers}
         )
 
     # Sort the cocycles by birth time in descending order
