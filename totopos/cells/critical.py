@@ -97,33 +97,28 @@ def prim_tree_find_loop(graph: nx.Graph, critical_edge: tuple, points: np.ndarra
     # print("No cycle formed with the given starting vertices and critical edge.")
     return None
 
-def vietoris_rips_graph(point_cloud: np.ndarray, birth_time: float, epsilon: float = 1e-4) -> nx.Graph:
+def vietoris_rips_graph(point_cloud: np.ndarray, birth_distance: float) -> nx.Graph:
     """
-    Returns a Vietoris-Rips graph from a point cloud using the birth time as a threshold.
+    Returns a Vietoris-Rips graph from a point cloud using the birth distance as a threshold.
 
     Params
     --------
     point_cloud (np.ndarray)
         The point cloud to create the graph from.
-    birth_time (float)
+    birth_distance (float)
         The birth distance threshold of the cocycle.
-    epsilon (float, optional)
-        For numerical stability, default is 1e-4.
-
     Returns
     --------
     nx.Graph
         The Vietoris-Rips graph.
     """
-    
-    threshold = birth_time + epsilon
-
+    birth_distance += 1e-4
     G = nx.Graph()
     num_points = len(point_cloud)
     for i in range(num_points):
         for j in range(i + 1, num_points):
             dist = np.linalg.norm(point_cloud[i] - point_cloud[j])
-            if dist <= threshold:
+            if dist <= birth_distance:
                 G.add_edge(i, j, weight=dist)
     return G
 
@@ -143,7 +138,7 @@ def get_top_cocycles_data(ph_output: dict, n: int = 5, method:str = "ripser") ->
     Returns
     --------
     list
-        A list of dictionaries containing the birth time, cocycle, critical edge, and persistence.
+        A list of dictionaries containing the birth distance, cocycle, critical edge, and persistence.
     """
 
     # Extract the persistence diagram for H1 (1-dimensional features)
@@ -159,16 +154,16 @@ def get_top_cocycles_data(ph_output: dict, n: int = 5, method:str = "ripser") ->
     cocycle_data = []
     for i in top_n_indices:
         cocycle = ph_output['cocycles'][1][i] if method == "ripser" else ph_output.cocycles_[1][i]
-        birth_time = h1_dgm[i, 0]
+        birth_distance = h1_dgm[i, 0]
         u, v, coeff = cocycle[0]
         critical_edge = (u, v)
         pers = persistence[i]
         cocycle_data.append(
-            {"birth_dist":birth_time, "cocycle":cocycle, "critical_edge":critical_edge, "pers": pers}
+            {"birth_dist":birth_distance, "cocycle":cocycle, "critical_edge":critical_edge, "pers": pers}
         )
 
-    # Sort the cocycles by birth time in descending order
-    # cocycle_data.sort(key=lambda x: x["birth_time"], reverse=True)
+    # Sort the cocycles by birth distance in descending order
+    # cocycle_data.sort(key=lambda x: x["birth_distance"], reverse=True)
     return cocycle_data
 
 def get_all_loop_nodes(top_cocycles_data, points):
@@ -188,13 +183,13 @@ def get_all_loop_nodes(top_cocycles_data, points):
         A list of nodes in all loops.
     """
 
-    birth_time, _, edge, _ = top_cocycles_data[0]
-    sparse_G = vietoris_rips_graph(points, birth_time)
+    birth_distance, _, edge, _ = top_cocycles_data[0]
+    sparse_G = vietoris_rips_graph(points, birth_distance)
     _, cycle = prim_tree_find_loop(sparse_G, edge, points)
     reps = [cycle]
 
     for i in range(1, len(top_cocycles_data)):
-        birth_time, _, edge, _ = top_cocycles_data[i]
+        birth_distance, _, edge, _ = top_cocycles_data[i]
         _, cycle = prim_tree_find_loop(sparse_G, edge, points)
         reps.append(cycle)
 
