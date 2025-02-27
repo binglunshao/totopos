@@ -33,7 +33,7 @@ def largest_neighborhood_lifetime(
         Dimension for PH to focus on.
     """
     
-    km = kmeans(n_clusters=n_clusters)
+    km = kmeans(n_clusters=n_clusters,random_state=13)
     km.fit(data)
     labels=km.predict(data)
     largest_nbd_lifetime=0
@@ -52,7 +52,7 @@ def neighborhood_subsample(data, n_clusters):
     """
     Returns clustering labels, representative indices and kmeans centroids
     """
-    km = kmeans(n_clusters=n_clusters)
+    km = kmeans(n_clusters=n_clusters, random_state=13)
     km.fit(data)
     labels = km.predict(data)
     
