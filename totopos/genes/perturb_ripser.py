@@ -36,7 +36,7 @@ def topological_scores_perturbation_torch_ripser(adata, ph=None, n_pcs = 20, max
     topo_loss = torch.norm(target_crit_values - filt_values)
     topo_loss.backward()
 
-    gradient = pts.grad
-    scores = gradient.norm(dim=0).numpy()
+    gradients = pts.grad
+    scores = gradients.norm(dim=0).numpy()
 
-    return scores
+    return gradients, scores
