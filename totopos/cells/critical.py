@@ -140,6 +140,7 @@ def get_top_cocycles_data(ph_output: dict, n: int = 5, method:str = "ripser") ->
     list
         A list of dictionaries containing the birth distance, cocycle, critical edge, and persistence.
     """
+    assert method in ["ripser", "dreimac"], f"Method {method} not supported. Choose one of ['ripser', 'dreimac']"
 
     # Extract the persistence diagram for H1 (1-dimensional features)
     h1_dgm = ph_output['dgms'][1] if method == "ripser" else ph_output.dgms_[1]
@@ -227,7 +228,7 @@ def get_loop_neighbors(all_data: np.ndarray, query_data: np.ndarray, radius: flo
     return all_data[unique_inds], unique_inds
 
 def critical_edge_method(
-    data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False
+    data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False, method:str = "ripser"
     )->list: 
     """
     Returns a list homology data for `n_loops` with largest lifetimes in Dgm_1(data). 
@@ -244,7 +245,9 @@ def critical_edge_method(
 
     verbose(bool, default=False)
         If set to True, print statements of algorithm steps will be delidered. 
-
+    
+    method (str, default = "ripser")
+        One of [`ripser`, `dreimac`]. Specifies the type of PH output.        
     Returns
     -------
     top_cocycle_data (list)
@@ -252,12 +255,14 @@ def critical_edge_method(
         The item for key "loop" is a size (n,2) numpy array containing the edges of the 
         topological loop with largest lifetime in the PH computation.
     """
+    assert method in ["ripser", "dreimac"], f"Method {method} not supported. Choose one of ['ripser', 'dreimac']"
+
     if ph == None:
         if verbose: print("Starting de novo PH computation...")
         ph = ripser(data, do_cocycles=True)
         if verbose:print("Finished computing PH.")
 
-    top_cocycle_data= get_top_cocycles_data(ph,n=n_loops)
+    top_cocycle_data= get_top_cocycles_data(ph,n=n_loops, method=method)
 
     iterable = range(n_loops) if n_loops==1 else tqdm(range(n_loops))
     
