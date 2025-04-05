@@ -137,7 +137,7 @@ def get_prominent_cohomology_class_data(ph_output: dict, n: int = 5, method:str 
 
     Returns
     --------
-    list
+    cohomology_class_data (list)
         A list of dictionaries containing the birth distance, cocycle, critical edge, and persistence.
     """
     assert method in ["ripser", "dreimac"], f"Method {method} not supported. Choose one of ['ripser', 'dreimac']"
@@ -163,34 +163,32 @@ def get_prominent_cohomology_class_data(ph_output: dict, n: int = 5, method:str 
             {"birth_dist":birth_distance, "cocycle":cocycle, "critical_edge":critical_edge, "pers": pers}
         )
 
-    # Sort the cocycles by birth distance in descending order
-    # cohomology_class_data.sort(key=lambda x: x["birth_distance"], reverse=True)
     return cohomology_class_data
 
-def get_all_loop_nodes(top_cocycles_data, points):
+def get_all_loop_nodes(persistent_cohomology_class_data:list, points:np.ndarray) -> list:
     """
     Returns a list of nodes in all loops from the top cocycles.
 
     Params
     --------
-    top_cocycles_data (list)
+    persistent_cohomology_class_data (list)
         The top cocycles extracted from the ripser result.
     points (np.ndarray)
         The point cloud.
 
     Returns
     --------
-    list
+    cycle_nodes (list)
         A list of nodes in all loops.
     """
 
-    birth_distance, _, edge, _ = top_cocycles_data[0]
+    birth_distance, _, edge, _ = persistent_cohomology_class_data[0]
     sparse_G = vietoris_rips_graph(points, birth_distance)
     _, cycle = prim_tree_find_loop(sparse_G, edge, points)
     reps = [cycle]
 
-    for i in range(1, len(top_cocycles_data)):
-        birth_distance, _, edge, _ = top_cocycles_data[i]
+    for i in range(1, len(persistent_cohomology_class_data)):
+        birth_distance, _, edge, _ = persistent_cohomology_class_data[i]
         _, cycle = prim_tree_find_loop(sparse_G, edge, points)
         reps.append(cycle)
 
@@ -279,7 +277,6 @@ def critical_edge_method(
     
     if n_loops==1:
         return [prominent_cohomology_classes_data[0]]
-        #topo_loops= topo_loops[0]
 
     if verbose: print("Finished critical edge algorithm.")
     return prominent_cohomology_classes_data[:n_loops]
