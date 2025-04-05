@@ -122,7 +122,7 @@ def vietoris_rips_graph(point_cloud: np.ndarray, birth_distance: float) -> nx.Gr
                 G.add_edge(i, j, weight=dist)
     return G
 
-def get_top_cocycles_data(ph_output: dict, n: int = 5, method:str = "ripser") -> list:
+def get_prominent_cohomology_class_data(ph_output: dict, n: int = 5, method:str = "ripser") -> list:
     """
     Extracts the top n most persistent cohomology generator data from ripser PH output.
 
@@ -152,20 +152,20 @@ def get_top_cocycles_data(ph_output: dict, n: int = 5, method:str = "ripser") ->
     # Get the top n most persistent cocycles
     top_n_indices = sorted_indices[:n]
     
-    cocycle_data = []
+    cohomology_class_data = []
     for i in top_n_indices:
         cocycle = ph_output['cocycles'][1][i] if method == "ripser" else ph_output.cocycles_[1][i]
         birth_distance = h1_dgm[i, 0]
         u, v, coeff = cocycle[0]
         critical_edge = (u, v)
         pers = persistence[i]
-        cocycle_data.append(
+        cohomology_class_data.append(
             {"birth_dist":birth_distance, "cocycle":cocycle, "critical_edge":critical_edge, "pers": pers}
         )
 
     # Sort the cocycles by birth distance in descending order
-    # cocycle_data.sort(key=lambda x: x["birth_distance"], reverse=True)
-    return cocycle_data
+    # cohomology_class_data.sort(key=lambda x: x["birth_distance"], reverse=True)
+    return cohomology_class_data
 
 def get_all_loop_nodes(top_cocycles_data, points):
     """
@@ -250,7 +250,7 @@ def critical_edge_method(
         One of [`ripser`, `dreimac`]. Specifies the type of PH output.        
     Returns
     -------
-    top_cocycle_data (list)
+    prominent_cohomology_classes_data (list)
         List of `n_loops` dictionaries containing topological information. 
         The item for key "loop" is a size (n,2) numpy array containing the edges of the 
         topological loop with largest lifetime in the PH computation.
@@ -262,24 +262,24 @@ def critical_edge_method(
         ph = ripser(data, do_cocycles=True)
         if verbose:print("Finished computing PH.")
 
-    top_cocycle_data= get_top_cocycles_data(ph,n=n_loops, method=method)
+    prominent_cohomology_classes_data= get_prominent_cohomology_class_data(ph,n=n_loops, method=method)
 
     iterable = range(n_loops) if n_loops==1 else tqdm(range(n_loops))
     
     for i in iterable:
-        birth_dist=top_cocycle_data[i]["birth_dist"]
-        crit_edge=top_cocycle_data[i]["critical_edge"]
+        birth_dist=prominent_cohomology_classes_data[i]["birth_dist"]
+        crit_edge=prominent_cohomology_classes_data[i]["critical_edge"]
         if verbose:print("Starting VR graph construction.")
         one_skeleton = vietoris_rips_graph(data, birth_dist)
         if verbose:print(f"Finished VR graph. Starting {i+1}-th loop discovery...")
         _, topological_loop = prim_tree_find_loop(one_skeleton, crit_edge, data)
         if verbose:print("Finished computing loop from VR graph.")
         topological_loop = np.array(topological_loop)
-        top_cocycle_data[i]["loop"] = topological_loop
+        prominent_cohomology_classes_data[i]["loop"] = topological_loop
     
     if n_loops==1:
-        return [top_cocycle_data[0]]
+        return [prominent_cohomology_classes_data[0]]
         #topo_loops= topo_loops[0]
 
     if verbose: print("Finished critical edge algorithm.")
-    return top_cocycle_data[:n_loops]
+    return prominent_cohomology_classes_data[:n_loops]
