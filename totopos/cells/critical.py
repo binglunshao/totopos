@@ -223,7 +223,8 @@ def get_loop_neighbors(all_data: np.ndarray, query_data: np.ndarray, radius: flo
     tree = BallTree(all_data, leaf_size=leaf_size)
     inds = tree.query_radius(query_data, r=radius)
     unique_inds = np.unique(np.concatenate(inds))
-    return all_data[unique_inds], unique_inds
+    topocells = all_data[unique_inds]
+    return topocells, unique_inds
 
 def critical_edge_method(
     data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False, method:str = "ripser"
@@ -248,7 +249,7 @@ def critical_edge_method(
         One of [`ripser`, `dreimac`]. Specifies the type of PH output.        
     Returns
     -------
-    prominent_cohomology_classes_data (list)
+    topological_loop_data (list)
         List of `n_loops` dictionaries containing topological information. 
         The item for key "loop" is a size (n,2) numpy array containing the edges of the 
         topological loop with largest lifetime in the PH computation.
