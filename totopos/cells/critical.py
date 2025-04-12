@@ -227,7 +227,7 @@ def get_loop_neighbors(all_data: np.ndarray, query_data: np.ndarray, radius: flo
     return topocells, unique_inds
 
 def critical_edge_method(
-    data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False, method:str = "ripser", compute_topocells:bool=False
+    data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False, method:str = "ripser", compute_topocells:bool=True
     )->list: 
     """
     Returns a list homology data for `n_loops` with largest lifetimes in Dgm_1(data). 
@@ -248,7 +248,7 @@ def critical_edge_method(
     method (str, default = "ripser")
         One of [`ripser`, `dreimac`]. Specifies the type of PH output.        
 
-    compute_topocells (bool, default=False)
+    compute_topocells (bool, default=True)
         If set to True, the function will compute the topoCells for the loop.
 
     Returns
