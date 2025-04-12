@@ -227,7 +227,7 @@ def get_loop_neighbors(all_data: np.ndarray, query_data: np.ndarray, radius: flo
     return topocells, unique_inds
 
 def critical_edge_method(
-    data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False, method:str = "ripser"
+    data:np.ndarray, ph:dict=None, n_loops:int = 1, verbose:bool=False, method:str = "ripser", compute_topocells:bool=False
     )->list: 
     """
     Returns a list homology data for `n_loops` with largest lifetimes in Dgm_1(data). 
@@ -247,6 +247,10 @@ def critical_edge_method(
     
     method (str, default = "ripser")
         One of [`ripser`, `dreimac`]. Specifies the type of PH output.        
+
+    compute_topocells (bool, default=False)
+        If set to True, the function will compute the topoCells for the loop.
+
     Returns
     -------
     topological_loop_data (list)
@@ -261,23 +265,35 @@ def critical_edge_method(
         ph = ripser(data, do_cocycles=True)
         if verbose:print("Finished computing PH.")
 
-    prominent_cohomology_classes_data= get_prominent_cohomology_class_data(ph,n=n_loops, method=method)
+    topological_loop_data = get_prominent_cohomology_class_data(ph,n=n_loops, method=method)
 
     iterable = range(n_loops) if n_loops==1 else tqdm(range(n_loops))
     
     for i in iterable:
-        birth_dist=prominent_cohomology_classes_data[i]["birth_dist"]
-        crit_edge=prominent_cohomology_classes_data[i]["critical_edge"]
+        birth_dist=topological_loop_data[i]["birth_dist"]
+        crit_edge=topological_loop_data[i]["critical_edge"]
         if verbose:print("Starting VR graph construction.")
         one_skeleton = vietoris_rips_graph(data, birth_dist)
         if verbose:print(f"Finished VR graph. Starting {i+1}-th loop discovery...")
         _, topological_loop = prim_tree_find_loop(one_skeleton, crit_edge, data)
         if verbose:print("Finished computing loop from VR graph.")
         topological_loop = np.array(topological_loop)
-        prominent_cohomology_classes_data[i]["loop"] = topological_loop
+        topological_loop_data[i]["loop"] = topological_loop
+
+        if compute_topocells:
+            zero_sk = np.unique(topological_loop)
+
+            topocells, tpc_ixs = get_loop_neighbors(
+                all_data = data,
+                query_data = data[zero_sk],
+                radius = birth_dist,
+            )
+
+            topological_loop_data[i]["topocells"] = topocells
+            topological_loop_data[i]["topocell_ixs"] = tpc_ixs
     
     if n_loops==1:
-        return [prominent_cohomology_classes_data[0]]
+        return [topological_loop_data[0]]
 
     if verbose: print("Finished critical edge algorithm.")
-    return prominent_cohomology_classes_data[:n_loops]
+    return topological_loop_data
