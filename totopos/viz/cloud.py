@@ -226,7 +226,8 @@ def replace_inf(arrays):
     return modified_arrays, max_val
 
 
-def visualize_h1(data, h1_simplex_list, pal = None, fig = None): 
+def visualize_h1(data, h1_simplex_list, pal = None, fig = None, d = 2): 
+    assert d in ["2", 3], "only 2D and 3D visualizations are supported"
     pal = cat_color_list() if pal is None else pal
     
     if fig is None:
@@ -238,13 +239,14 @@ def visualize_h1(data, h1_simplex_list, pal = None, fig = None):
     for k in range(n_loops):
         for edge in h1_simplex_list[k]: 
             source, tgt= edge
-            data_plot=cat([data[np.array([source]), :3], data[np.array([tgt]), :3]], 0)
+            data_plot=cat([data[np.array([source]), :d], data[np.array([tgt]), :d]], 0)
             ax.plot(*data_plot.T, color = pal[k], linewidth=3)
 
-    ax.scatter(*data[:, :3].T, s = 1, color = "grey",alpha=.2)
+    ax.scatter(*data[:, :d].T, s = 1, color = "grey",alpha=.2)
 
     ax.azim=50
-    plt.axis("off")
+    ax.axis("off")
+    #plt.axis("off")
     return fig
 
 def plot_pers_diag_ripser(dgms:list, ax = None, dot_size = 40, conf_int=None, pal = None):
