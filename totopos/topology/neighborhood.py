@@ -42,7 +42,7 @@ def largest_neighborhood_lifetime(
     if use_tqdm:
         iterable = tqdm(range(n_clusters),desc="Estimating PH noise floor using Voronoi neighborhoods...")
     else: 
-        range(n_clusters)
+        iterable = range(n_clusters)
     
     for i in iterable:
         persistence_diagram = ripser(data[labels==i],maxdim=ph_dim)["dgms"][ph_dim]
