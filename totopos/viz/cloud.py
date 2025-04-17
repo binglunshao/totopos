@@ -304,4 +304,5 @@ def plot_pers_diag_ripser(dgms:list, ax = None, dot_size = 40, conf_int=None, pa
     ax.set_ylim(0, max_val +.5)
     ax.set_xlabel("birth")
     ax.set_ylabel("death")
-    plt.legend()
+    #plt.legend()
+    ax.legend()
