@@ -17,7 +17,8 @@ def get_largest_lifetime_from_diagram(dgm):
 def largest_neighborhood_lifetime(
     data, 
     n_clusters=20,
-    ph_dim=1
+    ph_dim=1,
+    use_tqdm=True
 ): 
     """Returns the noise floor $\alpha$ defined as the largest PH lifetime across k neighborhoods using kmeans clustering.
 
@@ -38,7 +39,12 @@ def largest_neighborhood_lifetime(
     labels=km.predict(data)
     largest_nbd_lifetime=0
     neighborhood_lifetimes = []
-    for i in tqdm(range(n_clusters),desc="Estimating PH noise floor using Voronoi neighborhoods..."):
+    if use_tqdm:
+        iterable = tqdm(range(n_clusters),desc="Estimating PH noise floor using Voronoi neighborhoods...")
+    else: 
+        range(n_clusters)
+    
+    for i in iterable:
         persistence_diagram = ripser(data[labels==i],maxdim=ph_dim)["dgms"][ph_dim]
         neighborhood_lifetimes.extend(get_lifetimes(persistence_diagram))
         if len(persistence_diagram)>0:
