@@ -227,7 +227,7 @@ def replace_inf(arrays):
 
 
 def visualize_h1(data, h1_simplex_list, pal = None, ax = None, d = 2, return_fig = False): 
-    assert d in ["2", 3], "only 2D and 3D visualizations are supported"
+    assert d in [2, 3], "only 2D and 3D visualizations are supported"
     pal = cat_color_list() if pal is None else pal
     
     if ax is None:
