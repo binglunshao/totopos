@@ -232,7 +232,10 @@ def visualize_h1(data, h1_simplex_list, pal = None, ax = None, d = 2, return_fig
     
     if ax is None:
         fig = plt.figure(figsize=(4,4))
-        ax=fig.add_subplot(projection="3d")
+        if d == 3:
+            ax=fig.add_subplot(projection="3d")
+        else: 
+            ax=fig.add_subplot()
 
     n_loops = len(h1_simplex_list)
 
