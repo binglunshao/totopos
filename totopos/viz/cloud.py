@@ -226,13 +226,13 @@ def replace_inf(arrays):
     return modified_arrays, max_val
 
 
-def visualize_h1(data, h1_simplex_list, pal = None, fig = None, d = 2): 
+def visualize_h1(data, h1_simplex_list, pal = None, ax = None, d = 2, return_fig = False): 
     assert d in ["2", 3], "only 2D and 3D visualizations are supported"
     pal = cat_color_list() if pal is None else pal
     
-    if fig is None:
+    if ax is None:
         fig = plt.figure(figsize=(4,4))
-    ax=fig.add_subplot(projection="3d")
+        ax=fig.add_subplot(projection="3d")
 
     n_loops = len(h1_simplex_list)
 
@@ -247,7 +247,7 @@ def visualize_h1(data, h1_simplex_list, pal = None, fig = None, d = 2):
     ax.azim=50
     ax.axis("off")
     #plt.axis("off")
-    return fig
+    if return_fig: return fig
 
 def plot_pers_diag_ripser(dgms:list, ax = None, dot_size = 40, conf_int=None, pal = None):
     """
