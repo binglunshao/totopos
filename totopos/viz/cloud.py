@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 import numpy as np 
 import pandas as pd
 import copy
+import seaborn as sns
+from .palettes import cat_color_list
 cat = np.concatenate
 
 def inna_palette():
@@ -311,3 +313,39 @@ def plot_pers_diag_ripser(dgms:list, ax = None, dot_size = 40, conf_int=None, pa
     ax.set_ylabel("death")
     #plt.legend()
     ax.legend()
+
+def set_plotting_style_plt():
+
+    tw = 1.3
+    rc = {'lines.linewidth': 2,
+    'axes.labelsize': 18,
+    'axes.titlesize': 21,
+    'xtick.major' : 12,
+    'ytick.major' : 12,
+    'xtick.major.width': tw,
+    'xtick.minor.width': tw,
+    'ytick.major.width': tw,
+    'ytick.minor.width': tw,
+    'xtick.labelsize': 'large',
+    'ytick.labelsize': 'large',
+    'font.family': 'sans-serif',
+    'weight':'bold',
+    'grid.linestyle': ':',
+    'grid.linewidth': 1.5,
+    'grid.color': '#ffffff',
+    'mathtext.fontset': 'stixsans',
+    'mathtext.sf': 'fantasy',
+    'legend.frameon': True,
+    'legend.fontsize': 12,
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "figure.figsize": (3,3),
+    "axes.prop_cycle": plt.cycler(color=cat_color_list())
+    }
+
+
+
+    plt.rc('text.latex', preamble=r'\usepackage{sfmath}')
+    plt.rc('mathtext', fontset='stixsans', sf='sans')
+    sns.set_style('ticks', rc=rc)
+    sns.set_context('notebook', rc=rc)
