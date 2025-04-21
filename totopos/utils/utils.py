@@ -59,3 +59,10 @@ def generalized_distance_matrix_torch(X,Y):
     D = g1 + g2 - 2*X@Y.T
 
     return torch.sqrt(D)
+
+def jaccard_score(A, B):
+    set_A = set(A)
+    set_B = set(B)
+    intersection = len(set_A & set_B)
+    union = len(set_A | set_B)
+    return intersection / union
