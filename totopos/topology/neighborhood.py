@@ -51,7 +51,7 @@ def largest_neighborhood_lifetime(
             largest_lt_clus = get_largest_lifetime_from_diagram(persistence_diagram)
             if largest_lt_clus > largest_nbd_lifetime:
                 largest_nbd_lifetime = largest_lt_clus
-    return largest_nbd_lifetime, neighborhood_lifetimes
+    return largest_nbd_lifetime, neighborhood_lifetimes, labels
 
 
 def neighborhood_subsample(data, n_clusters): 
