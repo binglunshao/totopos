@@ -36,3 +36,25 @@ def greedy_farthest_point_sampling(X, n_points=1000,ix_start=None):
 
     hausdorff_distance = D.max()  # max over all x ∈ X of min_s∈S ||x - s||
     return ixs, hausdorff_distance
+
+
+def remap_indices(arr, mapping): 
+    remap = np.vectorize(mapping.get)
+    return remap(arr)
+
+
+def reindexpser_landmark_cocycles(ph, dim=1):
+    """
+    Remaps the indices of the persistent cohomology output from Ripser in landmark mode.
+    """
+    cocycles = ph["cocycles"][dim]
+    mapping = dict(zip(ph["idx_perm"], np.arange(len(ph["idx_perm"]))))
+    new_cocycles = []
+    for i, c in enumerate(cocycles):
+        l = len(c)
+        reindexed_cocyc = remap_indices(c[:, :dim+1], mapping)
+        new_cocycles.append(
+            np.concatenate((reindexed_cocyc, np.ones((l, 1), dtype=int)), axis=1)
+        )
+    ph["cocycles"][dim] = new_cocycles
+    return ph
