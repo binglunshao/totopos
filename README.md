@@ -6,7 +6,7 @@
 
 ## Overview
 
-A Python package for analyzing and visualizing topological features in single-cell data. Totopos identifies loops and other topological structures in your data, the cells that form these structures (topoCells), and the genes associated with them (topoGenes).
+A Python package for analyzing and visualizing topological features in single-cell data. Totopos identifies loops and other topological structures in your data, the cells that form these structures (`topoCells`), and the genes associated with them (`topoGenes`).
 
 ## Installation
 
