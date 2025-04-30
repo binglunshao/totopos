@@ -1,12 +1,12 @@
 # `totopos`
 
-<img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python version">
-
 **Totopos** - Trajectory Outlining for TOPOlogical Structures in single-cell data
 
 ## Overview
 
 A Python package for analyzing and visualizing topological features in single-cell data. Totopos identifies loops and other topological structures in your data, the cells that form these structures (`topoCells`), and the genes associated with them (`topoGenes`).
+
+`totopos` can also be used for other types of data to get homology representatives, and computing the variables important variables driving a particular homology class. 
 
 ## Installation
 
@@ -49,8 +49,7 @@ topological_loops = tpc.critical_edge_method(
 )
 
 # Compute topoGenes
-
-grads, ranking_scores = topological_scores_perturbation_torch_ripser(
+grads, topogene_scores = tpg.topological_scores_perturbation_torch_ripser(
     adata, ph, n_pcs, ix_top_class = 1
 )
 ```
