@@ -73,7 +73,7 @@ def plot_all_loops_3d(
     pal = ["#000", "#d95f02", "#7570b3", "#a6761d", '#7fc97f','#beaed4','#fdc086','#ffff99','#386cb0','#f0027f','#bf5b17','#666666']
 
     # Create the node trace using annotated_scatter_3d
-    node_trace = annotated_scatter_3d(data, x_col, y_col, z_col, color_col, hover_cols, palette_scatter)
+    node_trace = annotated_scatter_3d(data, x_col, y_col, z_col, color_col, hover_cols)#, palette_scatter)
 
     # Create edge traces for each cycle
     cycle_traces = []
