@@ -3,11 +3,29 @@ from ripser import ripser
 import numpy as np 
 from ..topology.neighborhood import neighborhood_subsample
 from ..utils.ph_utils import min_enclosing_radius_torch, get_lifetimes
-from ..utils.utils import randomized_pca_torch, differentiable_distance_matrix_torch
+from ..utils.utils import randomized_pca_torch
+import anndata as ad
 
+def topological_scores_perturbation_torch_ripser(
+    adata: ad.AnnData,
+    ph: dict = None, 
+    n_pcs: int = 20, 
+    max_distance: float = None, 
+    ix_top_class: int = 1
+) -> tuple:
+    """
+    Computes topological scores and gradients for perturbations using Ripser.
 
-def topological_scores_perturbation_torch_ripser(adata, ph=None, n_pcs = 20, max_distance = None): 
-    
+    Parameters:
+    - adata (AnnData): Annotated data matrix.
+    - ph (dict, optional): Precomputed persistent homology. Defaults to None.
+    - n_pcs (int, optional): Number of principal components to use. Defaults to 20.
+    - max_distance (float, optional): Maximum distance threshold for persistence computation. Defaults to None.
+    - ix_top_class (int, optional): Index of the top homology class to consider. Defaults to 1.
+
+    Returns:
+    - tuple: Gradients (torch.Tensor) and topological ranking scores (numpy.ndarray).
+    """
     data = adata.X.A
     pts = torch.Tensor(data)
     pts.requires_grad_(True);
@@ -24,7 +42,7 @@ def topological_scores_perturbation_torch_ripser(adata, ph=None, n_pcs = 20, max
     cocycles=ph["cocycles"]
     dgms=ph["dgms"]
     lifetimes = get_lifetimes(dgms[1])
-    ix_largest = np.argsort(lifetimes)[-1]
+    ix_largest = np.argsort(lifetimes)[-ix_top_class]
     cocycle_edges_largest_hom_class = cocycles[1][ix_largest][:, :2] # first two entries are edges 
     cocycle_edges_largest_hom_class = cocycle_edges_largest_hom_class[:, ::-1] # get edges in lexicographic order 
     death_time = dgms[1][ix_largest][1]
@@ -37,6 +55,6 @@ def topological_scores_perturbation_torch_ripser(adata, ph=None, n_pcs = 20, max
     topo_loss.backward()
 
     gradients = pts.grad
-    scores = gradients.norm(dim=0).numpy()
+    topological_ranking_scores = gradients.norm(dim=0).numpy()
 
-    return gradients, scores
+    return topological_ranking_scores, gradients
