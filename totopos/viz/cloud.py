@@ -19,8 +19,10 @@ def cat_color_list():
 
 def plot_all_loops_3d(
     data, cycle_list, birth_times, life_times,
-    title=None, pcs_viz=(0, 1, 2), color_col=None, hover_cols=None, pc_prefix="pc", white_background:bool=True,
-    palette_scatter=None
+    title=None, pcs_viz=(0, 1, 2), color_col=None, 
+    hover_cols=None, pc_prefix="pc", white_background:bool=True,
+    palette_scatter=None,
+    dot_size=10
 ):
     """
     Returns a plotly interactive figure with all loops in 3D.
@@ -73,7 +75,10 @@ def plot_all_loops_3d(
     pal = ["#000", "#d95f02", "#7570b3", "#a6761d", '#7fc97f','#beaed4','#fdc086','#ffff99','#386cb0','#f0027f','#bf5b17','#666666']
 
     # Create the node trace using annotated_scatter_3d
-    node_trace = annotated_scatter_3d(data, x_col, y_col, z_col, color_col, hover_cols)#, palette_scatter)
+    node_trace = annotated_scatter_3d(
+        data, x_col, y_col, z_col, color_col=color_col, hover_cols=hover_cols, cmap=palette_scatter,
+        dot_size=dot_size
+    )
 
     # Create edge traces for each cycle
     cycle_traces = []
@@ -134,8 +139,10 @@ def plot_all_loops_3d(
     return fig 
 
 
-def annotated_scatter_3d(df, x_col, y_col, z_col, color_col=None, hover_cols=None):
+def annotated_scatter_3d(df_, x_col, y_col, z_col, color_col=None, hover_cols=None, cmap=None, alpha=0.7, dot_size=1):
     """
+    3D scatter plot with optional categorical coloring.
+
     Params
     ------
     df (pd.DataFrame)
@@ -155,14 +162,30 @@ def annotated_scatter_3d(df, x_col, y_col, z_col, color_col=None, hover_cols=Non
     
     hover_cols (list, optional)
         List of column names to include in the hover information. If None, hover data will not be displayed.
-    
+
+    cmap (list, optional)
+        Custom list of hex color codes for the scatter points (categorical palette).
+
+    alpha (float, default=0.7)
+        Opacity of scatter dots.
+
+    dot_size (int, default=1)
+        Size of scatter dots.
+
     Returns
     -------
     scatter (plotly.graph_objects.Scatter3d)
         A Plotly Scatter3d object for the 3D scatter plot.
     """
+    df = df_.copy()
+    # Default color palette for categorical data
+    default_palette = ["#65bec3", "#94c77f", "#f06341", "#642870", "#35b779", "#d1cf5e", "#4572ab", "#f58669"]
+    
+    # Use provided cmap if supplied, otherwise default to default_palette
+    color_palette = cmap if cmap else default_palette
+
     # Initialize hover information if hover_cols is provided
-    if hover_cols:
+    if hover_cols is not None:
         df['hover_info'] = df.apply(
             lambda row: '<br>'.join([f"{col}: {row[col]}" for col in hover_cols]),
             axis=1
@@ -170,13 +193,17 @@ def annotated_scatter_3d(df, x_col, y_col, z_col, color_col=None, hover_cols=Non
     else:
         df['hover_info'] = None  # No hover information by default
 
-    # Initialize colors based on the color_col if provided
-    if color_col:
+    # Initialize colors for categorical data
+    if color_col is not None:
+        if isinstance(df[color_col].dtype, pd.CategoricalDtype):
+            df[color_col] = df[color_col].astype(str)
+
+        # Map categories to colors
         categories = df[color_col].unique()
-        color_map = {category: qualitative.D3[i % len(qualitative.D3)] for i, category in enumerate(categories)}
+        color_map = {category: color_palette[i % len(color_palette)] for i, category in enumerate(categories)}
         df['color'] = df[color_col].map(color_map)
     else:
-        df['color'] = "#D3D3D3" # Default color
+        df['color'] = "#D3D3D3"  # Default color if no color_col provided
 
     # Create the Scatter3d object
     scatter = go.Scatter3d(
@@ -184,14 +211,13 @@ def annotated_scatter_3d(df, x_col, y_col, z_col, color_col=None, hover_cols=Non
         y=df[y_col],  # y-coordinates
         z=df[z_col],  # z-coordinates
         mode='markers',  # Marker style
-        marker=dict(size=1, color=df['color'], opacity=0.8),  # Marker properties
+        marker=dict(size=dot_size, color=df['color'], opacity=alpha),  # Marker properties
         text=df['hover_info'],  # Combined hover data
-        hoverinfo='text' if hover_cols else 'skip'  # Show hover only if hover_cols is provided
+        hoverinfo='text' if hover_cols else 'skip',  # Show hover only if hover_cols is provided
+        showlegend=False  # Suppress legend for scatter points
     )
 
     return scatter
-
-
 
 def replace_inf(arrays):
     """Given a list of persistence diagrams (birth,death pairs) returns diagrams by modifying 
