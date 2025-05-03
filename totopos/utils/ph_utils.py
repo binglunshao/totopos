@@ -43,7 +43,7 @@ def remap_indices(arr, mapping):
     return remap(arr)
 
 
-def reindexpser_landmark_cocycles(ph, dim=1):
+def reindex_ripser_landmark_cocycles(ph, dim=1):
     """
     Remaps the indices of the persistent cohomology output from Ripser in landmark mode.
     """
