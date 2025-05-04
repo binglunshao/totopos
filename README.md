@@ -1,6 +1,6 @@
-# `totopos`
+# `totopos` 🧫 🔃 🧬 🧪
 
-**Totopos** - Trajectory Outlining for TOPOlogical Structures in single-cell data
+**Totopos** - Trajectory Outlining for TOPOlogical Structures in single-cell data 
 
 ## Overview
 
