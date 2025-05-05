@@ -58,3 +58,59 @@ def topological_scores_perturbation_torch_ripser(
     topological_ranking_scores = gradients.norm(dim=0).numpy()
 
     return topological_ranking_scores, gradients
+
+
+class TopoGenes():
+    def __init__(self, adata: ad.AnnData, ph: dict = None, n_pcs: int = 20, max_distance: float = None):
+        """
+        Initialize the topoGenes class.
+
+        Parameters:
+        - adata (AnnData): Annotated data matrix.
+        - n_pcs (int, optional): Number of principal components to use. Defaults to 20.
+        - max_distance (float, optional): Maximum distance threshold for persistence computation. Defaults to None.
+        """
+        data = adata.X.A
+        pts = torch.Tensor(data)
+        pts.requires_grad_(True);
+        self.data = pts
+        self.n_pcs = n_pcs
+        self.max_distance = max_distance
+        self.compute_pca()
+        if ph==None:
+            self.ph = ripser(
+                self.pcs.detach().numpy(),
+                do_cocycles=True, 
+                thresh=np.inf if max_distance is None else max_distance*1.1
+            )
+        
+        self.cocycles = ph["cocycles"]
+        self.dgms = ph["dgms"]
+    
+    def compute_pca(self, transform = False):
+        """
+        Compute PCA on the data.
+        """
+        self.pcs = randomized_pca_torch(self.data, self.n_pcs)
+        if transform:
+            return self.pcs
+    
+    def compute_topological_scores(self, ix_top_class: int = 1):
+        cocycles, dgms = self.cocycles, self.dgms
+        
+        lifetimes = get_lifetimes(dgms[1])
+        ix_cohom_class = np.argsort(lifetimes)[-ix_top_class]
+        cocycle_edges_largest_hom_class = cocycles[1][ix_cohom_class][:, :2] # first two entries are edges 
+        cocycle_edges_largest_hom_class = cocycle_edges_largest_hom_class[:, ::-1] # get edges in lexicographic order 
+        death_time = dgms[1][ix_cohom_class][1]
+
+        crit_edges_idx_x, crit_edges_idx_y = cocycle_edges_largest_hom_class.T
+
+        filt_values = torch.sum((self.pcs[crit_edges_idx_x, :] - self.pcs[crit_edges_idx_y, :])**2, axis=1) # distance of largest edges in critical simplices
+        target_crit_values = torch.repeat_interleave(torch.Tensor([death_time]), repeats=len(cocycle_edges_largest_hom_class))
+        topo_loss = torch.norm(target_crit_values - filt_values)
+        topo_loss.backward()
+
+        gradients = self.data.grad
+        topological_ranking_scores = gradients.norm(dim=0).numpy()
+        return topological_ranking_scores, gradients
