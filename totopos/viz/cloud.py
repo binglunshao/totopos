@@ -375,3 +375,23 @@ def set_plotting_style_plt():
     plt.rc('mathtext', fontset='stixsans', sf='sans')
     sns.set_style('ticks', rc=rc)
     sns.set_context('notebook', rc=rc)
+
+def make_inset_axis_label(ax, xlabel="PC 1", ylabel="PC 2"):
+    """
+    Creates an inset axis for low-dim projection plots.
+    """
+
+    inset_ax = ax.inset_axes([0.00, 0.00, 0.25, 0.25])
+
+    inset_ax.set_xlabel(xlabel, fontsize=16)
+    inset_ax.set_ylabel(ylabel, fontsize=16)
+    inset_ax.set_xticks([])
+    inset_ax.set_yticks([])
+    # Hide top and right spines for cleaner look
+    inset_ax.spines['top'].set_visible(False)
+    inset_ax.spines['right'].set_visible(False)
+    
+    # Optionally, emphasize bottom/left spines
+    inset_ax.spines['left'].set_linewidth(0.8)
+    inset_ax.spines['bottom'].set_linewidth(0.8)
+    inset_ax.set_facecolor('none')
