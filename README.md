@@ -45,13 +45,13 @@ ph = ripser(adata.obsm["pcs"])
 
 # Compute topoCells
 topological_loops = tpc.critical_edge_method(
-    adata.obsm["pcs], ph, n_loops = 1
+    adata.obsm["pcs"], ph, n_loops = 1
 )
 
 # Compute topoGenes
 grads, topogene_scores = tpg.topological_scores_perturbation_torch_ripser(
-    adata, ph, n_pcs, ix_top_class = 1
+    adata, ph, n_pcs = 20, ix_top_class = 1
 )
 ```
 
-For a full explanation, see the tutorials folder. 
+For a full explanation, see the `examples` folder. 
