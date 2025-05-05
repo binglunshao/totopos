@@ -61,7 +61,7 @@ def topological_scores_perturbation_torch_ripser(
 
 
 class TopoGenes():
-    def __init__(self, adata: ad.AnnData, ph: dict = None, n_pcs: int = 20, max_distance: float = None):
+    def __init__(self, adata: ad.AnnData, ph: dict = None, n_pcs: int = 20, max_distance: float = None, verbose: bool = False):
         """
         Initialize the topoGenes class.
 
@@ -78,14 +78,15 @@ class TopoGenes():
         self.max_distance = max_distance
         self.compute_pca()
         if ph==None:
+            if verbose: print("Computing persistent homology...")
             self.ph = ripser(
                 self.pcs.detach().numpy(),
                 do_cocycles=True, 
                 thresh=np.inf if max_distance is None else max_distance*1.1
             )
         
-        self.cocycles = ph["cocycles"]
-        self.dgms = ph["dgms"]
+        self.cocycles = self.ph["cocycles"]
+        self.dgms = self.ph["dgms"]
     
     def compute_pca(self, transform = False):
         """
