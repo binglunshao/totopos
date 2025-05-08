@@ -33,7 +33,6 @@ A Python package for analyzing and visualizing topological features in single-ce
 ```python
 import anndata as ad
 from ripser import ripser
-from persim import plot_diagrams
 import totopos.genes as tpg
 import totopos.cells as tpc
 
@@ -44,9 +43,7 @@ adata = ad.read_h5ad("path/to/sc.h5ad")
 ph = ripser(adata.obsm["pcs"])
 
 # Compute topoCells
-topological_loops = tpc.critical_edge_method(
-    adata.obsm["pcs"], ph, n_loops = 1
-)
+topological_loops = tpc.critical_edge_method(adata.obsm["pcs"], ph, n_loops=1)
 
 # Compute topoGenes
 grads, topogene_scores = tpg.topological_scores_perturbation_torch_ripser(
