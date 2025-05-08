@@ -273,7 +273,7 @@ def visualize_h1(data, h1_simplex_list, pal = None, ax = None, d = 2, return_fig
             data_plot=cat([data[np.array([source]), :d], data[np.array([tgt]), :d]], 0)
             ax.plot(*data_plot.T, color = pal[k], linewidth=3)
 
-    if scatter
+    if scatter:
         ax.scatter(*data[:, :d].T, s = 1, color = "grey",alpha=alpha)
 
     ax.azim=50
