@@ -254,7 +254,7 @@ def replace_inf(arrays):
     return modified_arrays, max_val
 
 
-def visualize_h1(data, h1_simplex_list, pal = None, ax = None, d = 2, return_fig = False, alpha = 0.2): 
+def visualize_h1(data, h1_simplex_list, pal = None, ax = None, d = 2, return_fig = False, alpha = 0.2, scatter = True): 
     assert d in [2, 3], "only 2D and 3D visualizations are supported"
     pal = cat_color_list() if pal is None else pal
     
@@ -273,7 +273,8 @@ def visualize_h1(data, h1_simplex_list, pal = None, ax = None, d = 2, return_fig
             data_plot=cat([data[np.array([source]), :d], data[np.array([tgt]), :d]], 0)
             ax.plot(*data_plot.T, color = pal[k], linewidth=3)
 
-    ax.scatter(*data[:, :d].T, s = 1, color = "grey",alpha=alpha)
+    if scatter
+        ax.scatter(*data[:, :d].T, s = 1, color = "grey",alpha=alpha)
 
     ax.azim=50
     ax.axis("off")
