@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from ripser import ripser
 from sklearn.cluster import MiniBatchKMeans as kmeans
+from typing import Tuple
 
 def get_lifetimes(dgm):
     death_radius, birth_radius = dgm[:, 1], dgm[:, 0]
@@ -14,13 +15,10 @@ def get_largest_lifetime_from_diagram(dgm):
     lifetimes = get_lifetimes(dgm)
     return sorted(lifetimes, reverse=True)[0]
 
-def largest_neighborhood_lifetime(
-    data, 
-    n_clusters=20,
-    ph_dim=1,
-    use_tqdm=True
-): 
-    """Returns the noise floor $\alpha$ defined as the largest PH lifetime across k neighborhoods using kmeans clustering.
+def largest_neighborhood_lifetime(data, n_clusters=20,ph_dim=1,use_tqdm=True)->Tuple[float, list, np.ndarray]:
+    """
+    Returns the PH noise floor, lifetimes and labels of neighborhoods.
+    The noise floor $\alpha$ is defined as the largest PH lifetime across k neighborhoods using kmeans clustering.
 
     Params
     ------
@@ -32,6 +30,13 @@ def largest_neighborhood_lifetime(
     
     ph_dim (int)
         Dimension for PH to focus on.
+    
+    use_tqdm (bool)
+        Whether to use tqdm for progress bar. Default is True.
+    
+    Returns
+    -------
+    largest_nbd_lifetime, neighborhood_lifetimes, labels
     """
     
     km = kmeans(n_clusters=n_clusters,random_state=13)
