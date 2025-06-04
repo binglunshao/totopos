@@ -101,9 +101,6 @@ class TopoGenes():
     def compute_topological_scores(self, ix_top_class: int = 1):
         cocycles, dgms = self.cocycles, self.dgms
 
-        # Clear previous gradients
-        if self.data.grad is not None:
-            self.data.grad.zero_()
         
         lifetimes = get_lifetimes(dgms[1])
         ix_cohom_class = np.argsort(lifetimes)[-ix_top_class]
