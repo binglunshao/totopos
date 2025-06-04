@@ -16,14 +16,16 @@ def topological_scores_perturbation_torch_ripser(
     """
     Computes topological scores and gradients for perturbations using Ripser.
 
-    Parameters:
+    Params
+    ------
     - adata (AnnData): Annotated data matrix.
     - ph (dict, optional): Precomputed persistent homology. Defaults to None.
     - n_pcs (int, optional): Number of principal components to use. Defaults to 20.
     - max_distance (float, optional): Maximum distance threshold for persistence computation. Defaults to None.
     - ix_top_class (int, optional): Index of the top homology class to consider. Defaults to 1.
 
-    Returns:
+    Returns
+    -------
     - tuple: Gradients (torch.Tensor) and topological ranking scores (numpy.ndarray).
     """
     data = adata.X.A
@@ -92,13 +94,30 @@ class TopoGenes():
     
     def compute_pca(self, transform = False):
         """
-        Compute PCA on the data.
+        Compute PCA on the data using torch.
         """
         self.pcs = randomized_pca_torch(self.data, self.n_pcs)
         if transform:
             return self.pcs
     
     def compute_topological_scores(self, ix_top_class: int = 1):
+        """
+        Compute topological ranking scores based on persistent omology.
+        Identifies the most persistent cohomology class (by default, the top class) from the persistence diagram,
+        extracts its representative cocycle edges, and computes a topological loss based on the squared distances
+        between critical points in the principal component space. The loss is backpropagated to obtain gradients,
+        which are then used to rank features by their topological relevance.
+        Params
+        ------ 
+            ix_top_class (int, optional): Index (from the top) of the persistent cohomology class to analyze. 
+                Defaults to 1 (the most persistent class).
+        Returns
+        -------
+            Tuple[np.ndarray, torch.Tensor]: 
+                - topological_ranking_scores: Feature-wise ranking scores derived from gradient norms.
+                - gradients: Raw gradients of the data with respect to the topological loss.
+        """
+
         cocycles, dgms = self.cocycles, self.dgms
 
         
@@ -113,7 +132,7 @@ class TopoGenes():
         filt_values = torch.sum((self.pcs[crit_edges_idx_x, :] - self.pcs[crit_edges_idx_y, :])**2, axis=1) # distance of largest edges in critical simplices
         target_crit_values = torch.repeat_interleave(torch.Tensor([death_time]), repeats=len(cocycle_edges_largest_hom_class))
         topo_loss = torch.norm(target_crit_values - filt_values)
-        topo_loss.backward(retain_graph=True)
+        topo_loss.backward(retain_graph=True) # to run multiple times, works since grads are computed w.r.t. to different slices of data
 
         gradients = self.data.grad
         topological_ranking_scores = gradients.norm(dim=0).numpy()
