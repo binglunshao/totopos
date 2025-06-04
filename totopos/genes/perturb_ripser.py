@@ -50,7 +50,9 @@ def topological_scores_perturbation_torch_ripser(
     crit_edges_idx_x, crit_edges_idx_y = cocycle_edges_largest_hom_class.T
 
     filt_values = torch.sum((pcs[crit_edges_idx_x, :] - pcs[crit_edges_idx_y, :])**2, axis=1) # distance of largest edges in critical simplices
-    target_crit_values = torch.repeat_interleave(torch.Tensor([death_time]), repeats=len(cocycle_edges_largest_hom_class))
+    target_crit_values = torch.repeat_interleave(
+        torch.Tensor([death_time]), repeats=len(cocycle_edges_largest_hom_class)
+    )
     topo_loss = torch.norm(target_crit_values - filt_values)
     topo_loss.backward()
 
@@ -114,7 +116,7 @@ class TopoGenes():
         filt_values = torch.sum((self.pcs[crit_edges_idx_x, :] - self.pcs[crit_edges_idx_y, :])**2, axis=1) # distance of largest edges in critical simplices
         target_crit_values = torch.repeat_interleave(torch.Tensor([death_time]), repeats=len(cocycle_edges_largest_hom_class))
         topo_loss = torch.norm(target_crit_values - filt_values)
-        topo_loss.backward()
+        topo_loss.backward(retain_graph=True)
 
         gradients = self.data.grad
         topological_ranking_scores = gradients.norm(dim=0).numpy()
