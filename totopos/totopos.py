@@ -9,32 +9,35 @@ from .utils.utils import randomized_pca_torch
 import anndata as ad
 
 class Totopos():
-    def __init__(self, adata: ad.AnnData, ph: dict = None, n_pcs: int = 20, max_distance: float = None, verbose: bool = False):
+    def __init__(self, adata: ad.AnnData, ph: dict = None, n_pcs: int = 20, verbose: bool = False):
         """
-        Initialize the topoGenes class.
+        Initialize the totopos class.
+        TODO: handle the use of subsampling.
 
-        Parameters:
-        - adata (AnnData): Annotated data matrix.
-        - n_pcs (int, optional): Number of principal components to use. Defaults to 20.
-        - max_distance (float, optional): Maximum distance threshold for persistence computation. Defaults to None.
+        Parameters
+        ----------
+        adata (AnnData): Annotated data matrix.
+        n_pcs (int, optional): Number of principal components to use. Defaults to 20.
         """
         data = adata.X.A
         pts = torch.Tensor(data)
         pts.requires_grad_(True);
         self.data = pts
         self.n_pcs = n_pcs
-        self.max_distance = max_distance
+        #self.max_distance = max_distance
         self.compute_pca()
+
         if ph==None:
-            if verbose: print("Computing persistent homology...")
-            self.ph = ripser(
-                self.pcs.detach().numpy(),
-                do_cocycles=True, 
-                thresh=np.inf if max_distance is None else max_distance*1.1
-            )
-        
+            self.ph = self.compute_cohomology()
+        else: 
+            self.ph = ph
+
         self.cocycles = self.ph["cocycles"]
         self.dgms = self.ph["dgms"]
+
+    def compute_cohomology(self, verbose=False): 
+        if verbose: print("Computing persistent homology...")
+        self.ph = ripser(self.pcs.detach().numpy(),do_cocycles=True)
     
     def compute_pca(self, transform = False):
         """
