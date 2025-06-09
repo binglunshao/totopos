@@ -70,9 +70,12 @@ class Totopos():
         "TODO:use topocell ixs to compute iterative scores."
         return None
     
-    def get_topogenes_ixs(self, index_top_class:int=1, n_topogenes:int=500):
+    def get_topogenes_ixs(self, index_top_class:int=1, n_topogenes:int=500, method="perturb"):
         "Return the indices of the topoGenes corresponding to the i-th most persistent class"
-        topological_scores, _ = self.compute_topological_scores_and_gradients(ix_top_class=index_top_class)
+        if method=="perturb":
+            topological_scores, _ = self.compute_topological_scores_and_gradients_perturb(ix_top_class=index_top_class)
+        else: 
+            topological_scores, _ = self.compute_topological_scores_and_gradients_iterative(ix_top_class=index_top_class)
         isort_tpgs = np.argsort(topological_scores)[::-1]
         topogenes_ids = isort_tpgs[:n_topogenes]
         return topogenes_ids
