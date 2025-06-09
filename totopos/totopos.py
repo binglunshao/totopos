@@ -46,7 +46,7 @@ class Totopos():
         if transform:
             return self.pcs
     
-    def compute_topological_scores_and_gradients(self, ix_top_class: int = 1):
+    def compute_topological_scores_and_gradients(self, ix_top_class: int = 1, return_data = False):
         """
         Compute topological ranking scores and gradients based on ablating a persistent cohomology class, 
         by default, the most persistent class. 
@@ -63,12 +63,14 @@ class Totopos():
             - gradients: Raw gradients of the data with respect to the topological loss.
         """
         topological_ranking_scores, gradients = compute_topological_scores(self.data, self.pcs, self.ph, ix_top_class)
-
         return topological_ranking_scores, gradients
     
-    def get_topogene_ixs(self, index_top_class=1, n_topogenes=500):
-        "TODO: return the indices of the topoGenes corresponding to the i-th most persistent class"
-        return None
+    def get_topogenes_ixs(self, index_top_class=1, n_topogenes=500):
+        "Return the indices of the topoGenes corresponding to the i-th most persistent class"
+        topological_scores, grads = self.compute_topological_scores_and_gradients(ix_top_class=index_top_class)
+        isort_tpgs = np.argsort(topological_scores)[::-1]
+        topogenes_ids = isort_tpgs[:n_topogenes]
+        return topogenes_ids
     
     def compute_topocells(self, n_loops:int = 1, verbose: bool = False, method:str = "ripser"):
         """
