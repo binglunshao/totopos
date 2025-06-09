@@ -28,8 +28,8 @@ class Totopos():
         self.compute_pca()
 
         if ph==None:
-            self.ph = self.compute_cohomology()
-        else: 
+            self.ph = self.compute_cohomology(verbose)
+        else:
             self.ph = ph
 
         self.cocycles = self.ph["cocycles"]
