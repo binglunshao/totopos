@@ -1,7 +1,8 @@
 import torch 
 from ripser import ripser 
 import numpy as np 
-from .genes.perturb_ripser import compute_topological_scores
+from .genes.perturb_ripser import compute_topological_scores_perturbation
+from .genes.iterative import compute_topological_scores_iterative
 from .cells.critical import critical_edge_method
 from .topology.neighborhood import neighborhood_subsample
 from .utils.ph_utils import min_enclosing_radius_torch, get_lifetimes
@@ -32,9 +33,9 @@ class Totopos():
         else:
             self.ph = ph
 
-    def compute_cohomology(self, verbose=False): 
+    def compute_cohomology(self, verbose=False,prime_coeff:int=47): 
         if verbose: print("Computing persistent homology...")
-        self.ph = ripser(self.pcs.detach().numpy(),do_cocycles=True)
+        self.ph = ripser(self.pcs.detach().numpy(),do_cocycles=True, coeff=prime_coeff)
         self.cocycles = self.ph["cocycles"]
         self.dgms = self.ph["dgms"]
     
@@ -46,7 +47,7 @@ class Totopos():
         if transform:
             return self.pcs
     
-    def compute_topological_scores_and_gradients(self, ix_top_class: int = 1):
+    def compute_topological_scores_and_gradients_perturb(self, ix_top_class: int = 1):
         """
         Compute topological ranking scores and gradients based on ablating a persistent cohomology class, 
         by default, the most persistent class. 
@@ -62,10 +63,14 @@ class Totopos():
             - topological_ranking_scores: Feature-wise ranking scores derived from gradient norms.
             - gradients: Raw gradients of the data with respect to the topological loss.
         """
-        topological_ranking_scores, gradients = compute_topological_scores(self.data, self.pcs, self.ph, ix_top_class)
+        topological_ranking_scores, gradients = compute_topological_scores_perturbation(self.data, self.pcs, self.ph, ix_top_class)
         return topological_ranking_scores, gradients
     
-    def get_topogenes_ixs(self, index_top_class=1, n_topogenes=500):
+    def compute_topological_scores_and_gradients_iterative(self, ix_top_class:int=1): 
+        "TODO:use topocell ixs to compute iterative scores."
+        return None
+    
+    def get_topogenes_ixs(self, index_top_class:int=1, n_topogenes:int=500):
         "Return the indices of the topoGenes corresponding to the i-th most persistent class"
         topological_scores, _ = self.compute_topological_scores_and_gradients(ix_top_class=index_top_class)
         isort_tpgs = np.argsort(topological_scores)[::-1]
