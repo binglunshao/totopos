@@ -32,12 +32,11 @@ class Totopos():
         else:
             self.ph = ph
 
-        self.cocycles = self.ph["cocycles"]
-        self.dgms = self.ph["dgms"]
-
     def compute_cohomology(self, verbose=False): 
         if verbose: print("Computing persistent homology...")
         self.ph = ripser(self.pcs.detach().numpy(),do_cocycles=True)
+        self.cocycles = self.ph["cocycles"]
+        self.dgms = self.ph["dgms"]
     
     def compute_pca(self, transform = False):
         """
