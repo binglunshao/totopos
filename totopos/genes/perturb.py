@@ -76,6 +76,7 @@ def topological_gene_scores_via_simplification(
     top_loss.backward()
     if verbose:print("Finished gene score calculation succesfully.")
     gradient = pts.grad
+
     return torch.norm(gradient, dim = 0).numpy(), [dgm[i] for i in range(hom_dim+1)]
 
 def topology_layer_perturbation(
