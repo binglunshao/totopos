@@ -219,6 +219,283 @@ def annotated_scatter_3d(df_, x_col, y_col, z_col, color_col=None, hover_cols=No
 
     return scatter
 
+def plot_loops(
+    adata, 
+    topological_loops,
+    title=None, 
+    pcs_viz=(0, 1, 2), 
+    color_col=None, 
+    hover_cols=None, 
+    white_background=True,
+    palette_scatter=None,
+    dot_size=1,
+    line_width=4,
+    use_pca=True
+):
+    """
+    Plot topological loops overlaid on single-cell data from AnnData object.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data object containing single-cell data
+    topological_loops : list of dict
+        List of dictionaries containing loop information with keys:
+        - 'loop': list of tuples representing edges
+        - 'birth_dist': birth time of the cycle  
+        - 'pers': persistence/lifetime of the cycle
+        - 'topocell_ixs': array of indices mapping to original adata
+    title : str, optional
+        Title of the plot
+    pcs_viz : tuple, optional
+        Indices of principal components to visualize (default: (0, 1, 2))
+    color_col : str, optional
+        Column name in adata.obs for categorical coloring
+    hover_cols : list, optional
+        List of column names from adata.obs to include in hover info
+    white_background : bool, optional
+        Whether to use white background (default: True)
+    palette_scatter : str, optional
+        Color palette for scatter plot
+    dot_size : int, optional
+        Size of scatter plot points (default: 3)
+    line_width : int, optional
+        Width of loop lines (default: 4)
+    use_pca : bool, optional
+        Whether to use PCA coordinates from adata.obsm['pcs'] (default: True)
+        If False, will create DataFrame from topocells
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        Interactive 3D plot with loops overlaid on cell data
+    """
+    
+    # Color palette for loops
+    loop_palette = [
+        "#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", 
+        "#ffff33", "#a65628", "#f781bf", "#999999", "#1f78b4",
+        "#33a02c", "#fb9a99", "#cab2d6", "#6a3d9a", "#b15928"
+    ]
+    
+    if use_pca and 'pcs' in adata.obsm:
+        # Use PCA coordinates from AnnData
+        pca_coords = adata.obsm['pcs']
+        
+        # Create DataFrame with PCA coordinates
+        n_pcs = min(pca_coords.shape[1], max(pcs_viz) + 1)
+        pc_columns = [f"pc{i}" for i in range(n_pcs)]
+        data_df = pd.DataFrame(pca_coords[:, :n_pcs], columns=pc_columns)
+        
+        # Add obs data for coloring and hover
+        for col in adata.obs.columns:
+            data_df[col] = adata.obs[col].values
+            
+    else:
+        # Use topocells from the first loop (assuming they represent the full dataset)
+        topocells = topological_loops[0]['topocells']
+        n_components = topocells.shape[1]
+        column_names = [f"pc{i}" for i in range(n_components)]
+        data_df = pd.DataFrame(topocells, columns=column_names)
+        
+        # Map back to original adata indices if available
+        if 'topocell_ixs' in topological_loops[0]:
+            topocell_ixs = topological_loops[0]['topocell_ixs']
+            # Add obs data for the subset of cells
+            for col in adata.obs.columns:
+                mapped_values = np.full(len(data_df), np.nan, dtype=object)
+                if len(topocell_ixs) == len(data_df):
+                    mapped_values = adata.obs.iloc[topocell_ixs][col].values
+                data_df[col] = mapped_values
+    
+    # Set coordinate columns
+    x_col = f"pc{pcs_viz[0]}"
+    y_col = f"pc{pcs_viz[1]}"  
+    z_col = f"pc{pcs_viz[2]}"
+    
+    # Create hover text
+    hover_text = None
+    if hover_cols:
+        available_hover_cols = [col for col in hover_cols if col in data_df.columns]
+        if available_hover_cols:
+            hover_text = data_df[available_hover_cols].apply(
+                lambda row: '<br>'.join([f"{col}: {row[col]}" for col in available_hover_cols]),
+                axis=1
+            )
+    
+    # Handle colors
+    color_values = None
+    if color_col in data_df.columns:
+        color_values = data_df[color_col]
+        # Convert categorical to string if needed
+        if hasattr(color_values, 'cat'):
+            color_values = color_values.astype(str)
+    else:
+        # Default color if no color_col provided
+        color_values = np.full(len(data_df), "#D3D3D3")
+    
+    # Create base scatter plot
+    scatter_trace = go.Scatter3d(
+        x=data_df[x_col],
+        y=data_df[y_col], 
+        z=data_df[z_col],
+        mode='markers',
+        marker=dict(
+            size=dot_size,
+            color=color_values,
+            colorscale=palette_scatter,
+            opacity=0.3,
+            line=dict(width=0)
+        ),
+        text=hover_text,
+        hoverinfo='text' if hover_text is not None else 'x+y+z',
+        name='Cells',
+        showlegend=False
+    )
+    
+    # Create loop traces
+    loop_traces = []
+    
+    for i, loop_info in enumerate(topological_loops):
+        loop_edges = loop_info['loop']
+        birth_time = float(loop_info['birth_dist'])
+        persistence = float(loop_info['pers'])
+        
+        # Get the topocell indices for this loop
+        if 'topocell_ixs' in loop_info:
+            topocell_ixs = loop_info['topocell_ixs']
+            
+            # Create mapping from topocell index to data_df index
+            if use_pca:
+                # Direct mapping - topocell_ixs are original adata indices
+                idx_mapping = {orig_idx: orig_idx for orig_idx in topocell_ixs if orig_idx < len(data_df)}
+            else:
+                # topocell_ixs map to positions in the topocells array
+                idx_mapping = {topocell_ixs[j]: j for j in range(len(topocell_ixs))}
+        else:
+            # Fallback: assume direct indexing
+            idx_mapping = {j: j for j in range(len(data_df))}
+        
+        # Build coordinates for the loop
+        x_coords = []
+        y_coords = []
+        z_coords = []
+        
+        valid_edges = []
+        for edge in loop_edges:
+            start_idx = int(edge[0])
+            end_idx = int(edge[1])
+            
+            # Map to data_df indices
+            start_mapped = idx_mapping.get(start_idx)
+            end_mapped = idx_mapping.get(end_idx)
+            
+            if (start_mapped is not None and end_mapped is not None and 
+                start_mapped < len(data_df) and end_mapped < len(data_df)):
+                
+                # Add edge coordinates
+                x_coords.extend([data_df.iloc[start_mapped][x_col], data_df.iloc[end_mapped][x_col], None])
+                y_coords.extend([data_df.iloc[start_mapped][y_col], data_df.iloc[end_mapped][y_col], None])  
+                z_coords.extend([data_df.iloc[start_mapped][z_col], data_df.iloc[end_mapped][z_col], None])
+                valid_edges.append((start_idx, end_idx))
+        
+        if len(valid_edges) > 0:
+            loop_trace = go.Scatter3d(
+                x=x_coords,
+                y=y_coords,
+                z=z_coords,
+                mode='lines',
+                line=dict(
+                    color=loop_palette[i % len(loop_palette)], 
+                    width=line_width
+                ),
+                name=f'Loop {i+1} (B:{birth_time:.2f}, P:{persistence:.2f})',
+                hoverinfo='name'
+            )
+            loop_traces.append(loop_trace)
+        else:
+            print(f"Warning: Loop {i+1} has no valid edges that map to the data")
+    
+    # Create figure
+    fig = go.Figure(data=[scatter_trace] + loop_traces)
+    
+    # Update layout
+    layout_kwargs = {
+        'title': title or 'Topological Loops on Single-Cell Data',
+        'showlegend': True,
+        'width': 1000,
+        'height': 800,
+        'scene': dict(
+            xaxis_title=f'PC{pcs_viz[0]}',
+            yaxis_title=f'PC{pcs_viz[1]}', 
+            zaxis_title=f'PC{pcs_viz[2]}',
+            camera=dict(
+                eye=dict(x=1.5, y=1.5, z=1.5)
+            )
+        )
+    }
+    
+    if white_background:
+        layout_kwargs.update({
+            'plot_bgcolor': 'white',
+            'paper_bgcolor': 'white'
+        })
+        layout_kwargs['scene'].update({
+            'xaxis': dict(backgroundcolor='white', gridcolor='lightgray'),
+            'yaxis': dict(backgroundcolor='white', gridcolor='lightgray'),
+            'zaxis': dict(backgroundcolor='white', gridcolor='lightgray')
+        })
+    
+    fig.update_layout(**layout_kwargs)
+    
+    return fig
+
+
+def quick_loop_summary(topological_loops):
+    """
+    Print a quick summary of the topological loops.
+    """
+    print(f"Number of loops: {len(topological_loops)}")
+    print("\nLoop summary:")
+    for i, loop_info in enumerate(topological_loops):
+        n_edges = len(loop_info['loop'])
+        birth = loop_info['birth_dist']
+        pers = loop_info['pers']
+        n_cells = loop_info['topocells'].shape[0] if 'topocells' in loop_info else 'N/A'
+        print(f"  Loop {i+1}: {n_edges} edges, {n_cells} cells, birth={birth:.3f}, persistence={pers:.3f}")
+
+
+# Example usage:
+"""
+# Quick summary
+quick_loop_summary(topological_loops)
+
+# Plot with AnnData PCA coordinates
+fig = plot_topological_loops_anndata(
+    adata=adata,
+    topological_loops=topological_loops,
+    title="Topological Loops in Single-Cell Data",
+    pcs_viz=(0, 1, 2),  # Use PC1, PC2, PC3
+    color_col='cell_type',  # Color by cell type
+    hover_cols=['cell_type', 'sample', 'day'],  # Show in hover
+    use_pca=True  # Use PCA coordinates from adata.obsm['pcs']
+)
+
+fig.show()
+
+# Alternative: Plot using topocells coordinates
+fig2 = plot_topological_loops_anndata(
+    adata=adata,
+    topological_loops=topological_loops,
+    title="Loops in Topological Space", 
+    pcs_viz=(0, 1, 2),
+    color_col='cell_state',
+    use_pca=False  # Use topocells instead of PCA
+)
+
+fig2.show()
+"""
+
 def replace_inf(arrays):
     """Given a list of persistence diagrams (birth,death pairs) returns diagrams by modifying 
     death values set to infty to the largest finite death time across all diagrams, and the largest death time.

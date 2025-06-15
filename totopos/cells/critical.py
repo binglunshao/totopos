@@ -282,15 +282,18 @@ def critical_edge_method(
         if verbose:print(f"Starting {i+1}-th loop discovery...")
         _, topological_loop = prim_tree_find_loop(one_skeleton, crit_edge_sub, points)
         if verbose:print(f"Finished computing loop {i+1} from VR graph.")
+        topological_loop = [
+            (sub2full[edge[0]], sub2full[edge[1]]) for edge in topological_loop
+        ]
         topological_loop_data[i]["loop"] = topological_loop
 
         if compute_topocells:
             zero_sk = np.unique(topological_loop)
-            zero_sk_full = np.array([sub2full[ix] for ix in zero_sk])
+            # zero_sk_full = np.array([sub2full[ix] for ix in zero_sk])
 
             topocells, tpc_ixs = get_loop_neighbors(
                 all_data = data,
-                query_data = data[zero_sk_full],
+                query_data = data[zero_sk],
                 radius = birth_dist,
             )
 
