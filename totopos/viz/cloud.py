@@ -673,3 +673,407 @@ def make_inset_axis_label(ax, xlabel="PC 1", ylabel="PC 2"):
     inset_ax.spines['left'].set_linewidth(0.8)
     inset_ax.spines['bottom'].set_linewidth(0.8)
     inset_ax.set_facecolor('none')
+
+
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+
+def plot_topocells_highlighted(
+    adata, 
+    topological_loops,
+    loop_indices=None,
+    title=None, 
+    pcs_viz=(1, 2, 3), 
+    color_col=None, 
+    hover_cols=None, 
+    white_background=True,
+    palette_topocells=None,
+    dot_size_gray=1,
+    dot_size_topo=2,
+    gray_alpha=0.3,
+    topo_alpha=0.5,
+    use_pca=True,
+    show_loops=False,
+    line_width=2
+):
+    """
+    Plot single-cell data with topocells highlighted in color and rest in gray.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data object containing single-cell data
+    topological_loops : list of dict
+        List of dictionaries containing loop information with keys:
+        - 'topocell_ixs': array of indices for topologically important cells
+        - 'loop': list of tuples representing edges (if show_loops=True)
+        - 'birth_dist': birth time (if show_loops=True)
+        - 'pers': persistence (if show_loops=True)
+    loop_indices : list of int, optional
+        Which loops to highlight (default: all loops)
+    title : str, optional
+        Title of the plot
+    pcs_viz : tuple, optional
+        Indices of principal components to visualize (default: (0, 1, 2))
+    color_col : str, optional
+        Column name in adata.obs for coloring topocells
+    hover_cols : list, optional
+        List of column names from adata.obs to include in hover info
+    white_background : bool, optional
+        Whether to use white background (default: True)
+    palette_topocells : list, optional
+        Custom color palette for different loops' topocells
+    dot_size_gray : int, optional
+        Size of gray background points (default: 2)
+    dot_size_topo : int, optional
+        Size of highlighted topocells (default: 4)
+    gray_alpha : float, optional
+        Opacity of gray background points (default: 0.3)
+    topo_alpha : float, optional
+        Opacity of highlighted topocells (default: 0.8)
+    use_pca : bool, optional
+        Whether to use PCA coordinates from adata.obsm['pcs'] (default: True)
+    show_loops : bool, optional
+        Whether to also show the loop connections (default: False)
+    line_width : int, optional
+        Width of loop lines if show_loops=True (default: 3)
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        Interactive 3D plot with topocells highlighted
+    """
+    
+    # Default color palette for different loops
+    if palette_topocells is None:
+        palette_topocells = [
+            "#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", 
+            "#ffff33", "#a65628", "#f781bf", "#66c2a5", "#fc8d62",
+            "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f", "#e5c494"
+        ]
+    
+    # Determine which loops to show
+    if loop_indices is None:
+        loop_indices = list(range(len(topological_loops)))
+    
+    # Get PCA coordinates
+    if use_pca and 'pcs' in adata.obsm:
+        pca_coords = adata.obsm['pcs']
+        n_pcs = min(pca_coords.shape[1], max(pcs_viz) + 1)
+        pc_columns = [f"pc{i}" for i in range(n_pcs)]
+        data_df = pd.DataFrame(pca_coords[:, :n_pcs], columns=pc_columns)
+        
+        # Add obs data
+        for col in adata.obs.columns:
+            data_df[col] = adata.obs[col].values
+    else:
+        raise ValueError("use_pca=False not implemented for this function. Use PCA coordinates.")
+    
+    # Set coordinate columns
+    x_col = f"pc{pcs_viz[0]}"
+    y_col = f"pc{pcs_viz[1]}"  
+    z_col = f"pc{pcs_viz[2]}"
+    
+    # Create hover text for all cells
+    hover_text = None
+    if hover_cols:
+        available_hover_cols = [col for col in hover_cols if col in data_df.columns]
+        if available_hover_cols:
+            hover_text = data_df[available_hover_cols].apply(
+                lambda row: '<br>'.join([f"{col}: {row[col]}" for col in available_hover_cols]),
+                axis=1
+            )
+    
+    # Collect all topocell indices
+    all_topocell_indices = set()
+    loop_topocell_mapping = {}
+    
+    for loop_idx in loop_indices:
+        if loop_idx < len(topological_loops):
+            loop_info = topological_loops[loop_idx]
+            if 'topocell_ixs' in loop_info:
+                topocells = set(loop_info['topocell_ixs'])
+                all_topocell_indices.update(topocells)
+                loop_topocell_mapping[loop_idx] = topocells
+    
+    # Create mask for topocells
+    is_topocell = np.zeros(len(data_df), dtype=bool)
+    topocell_loop_assignment = np.full(len(data_df), -1, dtype=int)
+    
+    for loop_idx, topocells in loop_topocell_mapping.items():
+        for idx in topocells:
+            if idx < len(data_df):
+                is_topocell[idx] = True
+                if topocell_loop_assignment[idx] == -1:  # First assignment wins
+                    topocell_loop_assignment[idx] = loop_idx
+    
+    traces = []
+    
+    # 1. Gray background trace (all non-topocells)
+    gray_mask = ~is_topocell
+    if np.any(gray_mask):
+        gray_hover = hover_text[gray_mask] if hover_text is not None else None
+        
+        gray_trace = go.Scatter3d(
+            x=data_df[gray_mask][x_col],
+            y=data_df[gray_mask][y_col], 
+            z=data_df[gray_mask][z_col],
+            mode='markers',
+            marker=dict(
+                size=dot_size_gray,
+                color='lightgray',
+                opacity=gray_alpha,
+                line=dict(width=0)
+            ),
+            text=gray_hover,
+            hoverinfo='text' if gray_hover is not None else 'x+y+z',
+            name='Background cells',
+            showlegend=True
+        )
+        traces.append(gray_trace)
+    
+    # 2. Colored traces for each loop's topocells
+    for i, loop_idx in enumerate(loop_indices):
+        if loop_idx not in loop_topocell_mapping:
+            continue
+            
+        # Create mask for this loop's topocells
+        loop_mask = (topocell_loop_assignment == loop_idx)
+        
+        if not np.any(loop_mask):
+            continue
+        
+        # Get color for topocells
+        if color_col and color_col in data_df.columns:
+            # Use the specified column for coloring
+            color_values = data_df[loop_mask][color_col]
+            if hasattr(color_values, 'cat'):
+                color_values = color_values.astype(str)
+            marker_color = color_values
+            colorscale = 'Viridis'  # Default colorscale
+        else:
+            # Use loop-specific color
+            marker_color = palette_topocells[i % len(palette_topocells)]
+            colorscale = None
+        
+        loop_hover = hover_text[loop_mask] if hover_text is not None else None
+        
+        # Get loop info for name
+        loop_info = topological_loops[loop_idx]
+        birth_time = float(loop_info.get('birth_dist', 0))
+        persistence = float(loop_info.get('pers', 0))
+        n_topocells = np.sum(loop_mask)
+        
+        topocell_trace = go.Scatter3d(
+            x=data_df[loop_mask][x_col],
+            y=data_df[loop_mask][y_col], 
+            z=data_df[loop_mask][z_col],
+            mode='markers',
+            marker=dict(
+                size=dot_size_topo,
+                color=marker_color,
+                colorscale=colorscale,
+                opacity=topo_alpha,
+                line=dict(width=0, color='white')
+            ),
+            text=loop_hover,
+            hoverinfo='text' if loop_hover is not None else 'x+y+z',
+            name=f'Loop {loop_idx+1} ({n_topocells} cells, B:{birth_time:.2f}, P:{persistence:.2f})',
+            showlegend=True
+        )
+        traces.append(topocell_trace)
+        
+        # 3. Add loop connections if requested
+        if show_loops and 'loop' in loop_info:
+            loop_edges = loop_info['loop']
+            topocells_set = loop_topocell_mapping[loop_idx]
+            
+            # Build coordinates for the loop connections
+            x_coords = []
+            y_coords = []
+            z_coords = []
+            
+            for edge in loop_edges:
+                start_idx = int(edge[0])
+                end_idx = int(edge[1])
+                
+                if (start_idx in topocells_set and end_idx in topocells_set and
+                    start_idx < len(data_df) and end_idx < len(data_df)):
+                    
+                    x_coords.extend([data_df.iloc[start_idx][x_col], data_df.iloc[end_idx][x_col], None])
+                    y_coords.extend([data_df.iloc[start_idx][y_col], data_df.iloc[end_idx][y_col], None])  
+                    z_coords.extend([data_df.iloc[start_idx][z_col], data_df.iloc[end_idx][z_col], None])
+            
+            if len(x_coords) > 0:
+                loop_trace = go.Scatter3d(
+                    x=x_coords,
+                    y=y_coords,
+                    z=z_coords,
+                    mode='lines',
+                    line=dict(
+                        color=palette_topocells[i % len(palette_topocells)], 
+                        width=line_width
+                    ),
+                    name=f'Loop {loop_idx+1} connections',
+                    hoverinfo='name',
+                    showlegend=False  # Don't clutter legend
+                )
+                traces.append(loop_trace)
+    
+    # Create figure
+    fig = go.Figure(data=traces)
+    
+    # Update layout
+    n_topocells_total = len(all_topocell_indices)
+    n_background = len(data_df) - n_topocells_total
+    
+    layout_kwargs = {
+        'title': title or f'Topocells Highlighted ({n_topocells_total} topocells, {n_background} background)',
+        'showlegend': True,
+        'width': 1000,
+        'height': 800,
+        'scene': dict(
+            xaxis_title=f'PC{pcs_viz[0]}',
+            yaxis_title=f'PC{pcs_viz[1]}', 
+            zaxis_title=f'PC{pcs_viz[2]}',
+            camera=dict(
+                eye=dict(x=1.5, y=1.5, z=1.5)
+            )
+        )
+    }
+    
+    if white_background:
+        layout_kwargs.update({
+            'plot_bgcolor': 'white',
+            'paper_bgcolor': 'white'
+        })
+        layout_kwargs['scene'].update({
+            'xaxis': dict(backgroundcolor='white', gridcolor='lightgray'),
+            'yaxis': dict(backgroundcolor='white', gridcolor='lightgray'),
+            'zaxis': dict(backgroundcolor='white', gridcolor='lightgray')
+        })
+    
+    fig.update_layout(**layout_kwargs)
+    
+    return fig
+
+
+def plot_single_loop_topocells(
+    adata, 
+    topological_loops,
+    loop_index,
+    title=None,
+    pcs_viz=(1, 2, 3), 
+    color_col=None,
+    hover_cols=None,
+    **kwargs
+):
+    """
+    Convenience function to plot topocells from a single loop.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data object
+    topological_loops : list of dict
+        Loop information
+    loop_index : int
+        Index of the loop to highlight
+    title : str, optional
+        Plot title
+    pcs_viz : tuple, optional
+        PC indices to plot
+    color_col : str, optional
+        Column for coloring topocells
+    hover_cols : list, optional
+        Columns for hover info
+    **kwargs
+        Additional arguments passed to plot_topocells_highlighted
+    
+    Returns
+    -------
+    plotly.graph_objects.Figure
+    """
+    return plot_topocells_highlighted(
+        adata=adata,
+        topological_loops=topological_loops,
+        loop_indices=[loop_index],
+        title=title or f'Loop {loop_index + 1} Topocells',
+        pcs_viz=pcs_viz,
+        color_col=color_col,
+        hover_cols=hover_cols,
+        **kwargs
+    )
+
+
+def summarize_topocells(adata, topological_loops):
+    """
+    Print summary statistics about topocells across loops.
+    """
+    print("Topocells Summary:")
+    print("=" * 50)
+    
+    all_topocells = set()
+    for i, loop_info in enumerate(topological_loops):
+        if 'topocell_ixs' in loop_info:
+            topocells = set(loop_info['topocell_ixs'])
+            n_topocells = len(topocells)
+            birth = loop_info.get('birth_dist', 0)
+            pers = loop_info.get('pers', 0)
+            
+            print(f"Loop {i+1}: {n_topocells:,} topocells (B:{birth:.3f}, P:{pers:.3f})")
+            all_topocells.update(topocells)
+    
+    n_total_cells = adata.n_obs
+    n_unique_topocells = len(all_topocells)
+    pct_topocells = (n_unique_topocells / n_total_cells) * 100
+    
+    print(f"\nTotal: {n_unique_topocells:,} unique topocells out of {n_total_cells:,} cells ({pct_topocells:.1f}%)")
+
+
+# Example usage:
+"""
+# Summary of topocells
+summarize_topocells(adata, topological_loops)
+
+# Plot all loops' topocells highlighted
+fig1 = plot_topocells_highlighted(
+    adata=adata,
+    topological_loops=topological_loops,
+    title="All Topocells Highlighted",
+    color_col='cell_type',  # Color topocells by cell type
+    hover_cols=['cell_type', 'sample', 'day'],
+    pcs_viz=(0, 1, 2),
+    dot_size_gray=1,  # Small gray dots
+    dot_size_topo=3,  # Larger colored dots
+    show_loops=True   # Also show connections
+)
+
+fig1.show()
+
+# Plot only the first loop's topocells
+fig2 = plot_single_loop_topocells(
+    adata=adata,
+    topological_loops=topological_loops,
+    loop_index=0,  # First loop
+    color_col='somite_stage',
+    hover_cols=['cell_type', 'somite_stage', 'day'],
+    show_loops=True
+)
+
+fig2.show()
+
+# Plot specific loops (e.g., loops 0 and 2)
+fig3 = plot_topocells_highlighted(
+    adata=adata,
+    topological_loops=topological_loops,
+    loop_indices=[0, 2],  # Only loops 1 and 3
+    title="Selected Loops Highlighted",
+    color_col='cell_state',
+    pcs_viz=(1, 2, 3),  # Use PC2, PC3, PC4
+    show_loops=False
+)
+
+fig3.show()
+"""
