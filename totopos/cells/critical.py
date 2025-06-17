@@ -258,7 +258,7 @@ def critical_edge_method(
 
     if ph == None:
         if verbose: print("Starting de novo PH computation...")
-        if npts > data.shape[0]:
+        if npts is not None and npts > data.shape[0]:
             npts = None  # Use all points if npts is larger than the number of points in data
         ph = ripser(data, do_cocycles=True, n_perm=npts)
         if verbose:print("Finished computing PH.")
