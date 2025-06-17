@@ -40,7 +40,7 @@ import totopos.cells as tpc
 adata = ad.read_h5ad("path/to/sc.h5ad")
 
 # Compute persistent homology and determine if there are topological loops
-ph = ripser(adata.obsm["pcs"])
+ph = ripser(adata.obsm["pcs"], do_cocycles=True)
 
 # Compute topoCells
 topological_loops = tpc.critical_edge_method(adata.obsm["pcs"], ph, n_loops=1)
