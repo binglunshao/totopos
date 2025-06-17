@@ -49,7 +49,6 @@ def find_pca_cutoff(adata, thres=0.02, k=100, save_pca=True):
 
     return cutoff_pc
 
-import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
