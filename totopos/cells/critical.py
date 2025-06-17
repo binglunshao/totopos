@@ -289,7 +289,6 @@ def critical_edge_method(
 
         if compute_topocells:
             zero_sk = np.unique(topological_loop)
-            # zero_sk_full = np.array([sub2full[ix] for ix in zero_sk])
 
             topocells, tpc_ixs = get_loop_neighbors(
                 all_data = data,
