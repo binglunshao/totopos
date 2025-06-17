@@ -108,7 +108,9 @@ def detect_outliers(adata, n_pcs=50, contamination=0.05, max_samples=100000,
     
     outlier_mask = predictions == -1
     
-    print(f"Found {np.sum(outlier_mask):,} outliers ({100*np.sum(outlier_mask)/len(outlier_mask):.1f}%)")
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Found {np.sum(outlier_mask):,} outliers ({100*np.sum(outlier_mask)/len(outlier_mask):.1f}%)")
     
     return outlier_mask, scores
 
