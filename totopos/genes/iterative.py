@@ -70,32 +70,3 @@ def compute_topological_scores_iterative(
         print("Topological scoring via cycle closure completed.")
 
     return scores, grads
-
-
-def iterative(pcs, n_reps = 100, ):
-    
-    topo_loss_total = 0
-
-    for _ in range(n_reps):
-        n_cells = torch.randint(0, int(0.2*pcs.shape[0]), (1,)).item()
-        sample_indices = torch.randperm(pcs.shape[0])[:n_cells]
-        rep_cells = pcs[sample_indices]
-
-        cc_values = a.obs['cc'].values[sample_indices]
-        ordered_indices = np.argsort(cc_values)
-        ordered_indices_torch = torch.LongTensor(ordered_indices)
-        ordered_rep_cells = rep_cells[ordered_indices_torch]
-
-        ordered_rep_cells = torch.cat([ordered_rep_cells, ordered_rep_cells[0].unsqueeze(0)], dim=0)
-        dist_vecs = ordered_rep_cells[1:] - ordered_rep_cells[:-1]
-        norms = dist_vecs.norm(dim=1)
-        topo_loss = norms.sum()
-        topo_loss_total += topo_loss
-
-    topo_loss_total.backward()
-    grads = pts.grad
-
-    scores = grads.norm(dim=0).numpy()
-    sorted_indices = np.argsort(scores)[::-1]
-
-    return scores, grads
