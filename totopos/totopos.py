@@ -3,6 +3,7 @@ from ripser import ripser
 import numpy as np 
 from .genes.perturb_ripser import compute_topological_scores_perturbation
 from .genes.iterative import compute_topological_scores_iterative
+from .pseudotime.cyclic import compute_circular_coordinate
 from .cells.critical import critical_edge_method
 from .topology.neighborhood import neighborhood_subsample, largest_neighborhood_lifetime
 from .utils.ph_utils import min_enclosing_radius_torch, get_lifetimes
@@ -92,7 +93,7 @@ class Totopos():
         "TODO: return the indices of the topoCells corresponding to the i-th most persistent class"
         return None
     
-    def compute_ph_noise_floor(self,nbd_size:int=350):
+    def compute_ph_noise_floor(self, nbd_size:int=350):
         """
         Estimate the persistent homology (PH) noise floor using the largest neighborhood lifetime approach.
 
@@ -109,3 +110,18 @@ class Totopos():
         )
         
         return thresh
+    
+    def circular_coordinate(self, n_pcs=None, ix_top_class:int=1):
+
+        if n_pcs is None:
+            cc=compute_circular_coordinate(
+                self.pcs.detach().numpy(),
+                ix_cohom_class=ix_top_class
+            )
+        else: 
+            cc=compute_circular_coordinate(
+                self.pcs.detach().numpy()[:,:n_pcs],
+                ix_cohom_class=ix_top_class
+            )
+        
+        return cc
