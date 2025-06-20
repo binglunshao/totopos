@@ -270,16 +270,21 @@ def critical_edge_method(
 
     topological_loop_data = get_prominent_cohomology_class_data(ph,n=n_loops, method=method)
     birth_dist_latest = topological_loop_data[0]["birth_dist"]
-    if verbose:print("Starting VR graph construction.")
-    one_skeleton = vietoris_rips_graph(points, birth_dist_latest)
-    if verbose:print(f"Finished VR graph. Starting loop discovery...")
+    # if verbose:print("Starting VR graph construction.")
+    # one_skeleton = vietoris_rips_graph(points, birth_dist_latest)
+    # if verbose:print(f"Finished VR graph. Starting loop discovery...")
 
     iterable = range(n_loops) if n_loops==1 else tqdm(range(n_loops))
     for i in iterable:
         birth_dist=topological_loop_data[i]["birth_dist"]
         crit_edge=topological_loop_data[i]["critical_edge"]
         crit_edge_sub = (full2sub[crit_edge[0]], full2sub[crit_edge[1]])
-        if verbose:print(f"Starting {i+1}-th loop discovery...")
+
+        if verbose:print("Starting VR graph construction.")
+        one_skeleton = vietoris_rips_graph(points, birth_dist)
+        if verbose:print(f"Finished VR graph. Starting {i+1}-th loop discovery...")
+
+        #if verbose:print(f"Starting {i+1}-th loop discovery...")
         _, topological_loop = prim_tree_find_loop(one_skeleton, crit_edge_sub, points)
         if verbose:print(f"Finished computing loop {i+1} from VR graph.")
         topological_loop = [
