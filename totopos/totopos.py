@@ -86,7 +86,7 @@ class Totopos():
         Runs the Critical edge algorithm (see  `totopos.genes.perturb_ripser`)
         """
         self.homology_data = critical_edge_method(
-            self.pcs.detach().numpy(), self.ph, n_pts, n_loops, verbose, method, compute_topocells=True
+            self.pcs.detach().numpy(), ph=self.ph, npts=n_pts, n_loops=n_loops, verbose=verbose, method=method, compute_topocells=True
         )
     
     def get_topocell_ixs(self): 
