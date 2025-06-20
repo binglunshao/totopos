@@ -4,7 +4,7 @@ import numpy as np
 from .genes.perturb_ripser import compute_topological_scores_perturbation
 from .genes.iterative import compute_topological_scores_iterative
 from .cells.critical import critical_edge_method
-from .topology.neighborhood import neighborhood_subsample
+from .topology.neighborhood import neighborhood_subsample, largest_neighborhood_lifetime
 from .utils.ph_utils import min_enclosing_radius_torch, get_lifetimes
 from .utils.utils import randomized_pca_torch
 import anndata as ad
@@ -91,3 +91,21 @@ class Totopos():
     def get_topocell_ixs(self): 
         "TODO: return the indices of the topoCells corresponding to the i-th most persistent class"
         return None
+    
+    def compute_ph_noise_floor(self,nbd_size:int=350):
+        """
+        Estimate the persistent homology (PH) noise floor using the largest neighborhood lifetime approach.
+
+        Parameters
+        ----------
+        nbd_size (int, optional): Target size for each neighborhood cluster. Defaults to 350.
+
+        Returns
+        -------
+        thresh (float): Estimated PH noise floor for the dataset.
+        """
+        thresh, lifetimes, nbd_labels = largest_neighborhood_lifetime(
+            self.pcs.detach().numpy(), n_clusters=self.data.shape[0]//nbd_size
+        )
+        
+        return thresh
