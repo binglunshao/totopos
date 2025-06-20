@@ -81,12 +81,12 @@ class Totopos():
         topogenes_ids = isort_tpgs[:n_topogenes]
         return topogenes_ids
     
-    def compute_topocells(self, n_loops:int = 1, verbose: bool = False, method:str = "ripser"):
+    def compute_topocells(self, n_pts=None, n_loops:int = 1, verbose: bool = False, method:str = "ripser"):
         """
         Runs the Critical edge algorithm (see  `totopos.genes.perturb_ripser`)
         """
         self.homology_data = critical_edge_method(
-            self.pcs.detach().numpy(), self.ph, n_loops, verbose, method, compute_topocells=True
+            self.pcs.detach().numpy(), self.ph, n_pts, n_loops, verbose, method, compute_topocells=True
         )
     
     def get_topocell_ixs(self): 
