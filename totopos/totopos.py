@@ -1,4 +1,5 @@
 import torch 
+from scipy import sparse
 from ripser import ripser 
 import numpy as np 
 from .genes.perturb_ripser import compute_topological_scores_perturbation
@@ -21,7 +22,7 @@ class Totopos():
         adata (AnnData): Annotated data matrix.
         n_pcs (int, optional): Number of principal components to use. Defaults to 20.
         """
-        data = adata.X.A
+        data = adata.X.A if sparse.issparse(adata.X) else adata.X
         pts = torch.Tensor(data)
         pts.requires_grad_(True);
         self.data = pts
