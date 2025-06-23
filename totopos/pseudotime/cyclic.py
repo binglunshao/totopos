@@ -9,10 +9,6 @@ from ripser import ripser
 from scipy import sparse
 from scipy.sparse.linalg import lsqr
 
-def get_longest_persistent_class_index(dgm_H1):
-    """Return index of the longest-living class in H¹."""
-    return max(enumerate(dgm_H1), key=lambda x: x[1][1] - x[1][0])[0]
-
 def build_coboundary_matrix_delta_0(distance_matrix, epsilon):
     """Construct coboundary matrix δ⁰ based on distance threshold ε."""
     edge_indices = np.array((distance_matrix <= epsilon).nonzero()).T
@@ -124,9 +120,6 @@ def compute_circular_coordinate(X, ph=None, prime=47, ix_cohom_class=1):
     cocycles_H1 = ph['cocycles'][1]
     D = ph['dperm2all']
     lifetimes = get_lifetimes(dgm_H1)
-
-    # if ix_cohomology_class is None:
-    #     ix_cohomology_class = get_longest_persistent_class_index(dgm_H1)
     
     ix_cohomology_class = np.argsort(lifetimes)[-ix_cohom_class]
     

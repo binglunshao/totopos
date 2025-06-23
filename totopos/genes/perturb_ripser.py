@@ -55,13 +55,13 @@ def compute_topological_scores_perturbation(data, pcs, ph, ix_top_class: int = 1
     which are then used to rank features by their topological relevance.
     Params
     ------ 
-        ix_top_class (int, optional): Index (from the top) of the persistent cohomology class to analyze. 
-            Defaults to 1 (the most persistent class).
+    ix_top_class (int, optional): Index (from the top) of the persistent cohomology class to analyze. 
+        Defaults to 1 (the most persistent class).
     Returns
     -------
-        Tuple[np.ndarray, torch.Tensor]: 
-            - topological_ranking_scores: Feature-wise ranking scores derived from gradient norms.
-            - gradients: Raw gradients of the data with respect to the topological loss.
+    Tuple[np.ndarray, torch.Tensor]: 
+        - topological_ranking_scores: Feature-wise ranking scores derived from gradient norms.
+        - gradients: Raw gradients of the data with respect to the topological loss.
     """
 
     cocycles, dgms = ph["cocycles"], ph["dgms"]
